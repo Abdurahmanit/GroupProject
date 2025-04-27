@@ -45,11 +45,21 @@ func main() {
 	r.Post("/api/user/register", userHandler.Register)
 	r.Post("/api/user/login", userHandler.Login)
 
-	// Protected routes
+	// Protected routes (require JWT authentication)
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.JWTAuth(cfg.JWTSecret))
 		r.Post("/api/user/logout", userHandler.Logout)
 		r.Get("/api/user/profile", userHandler.GetProfile)
+		r.Put("/api/user/profile", userHandler.UpdateProfile)
+		r.Post("/api/user/change-password", userHandler.ChangePassword)
+		r.Post("/api/user/verify-email", userHandler.VerifyEmail)
+		r.Delete("/api/user/delete", userHandler.DeleteUser)
+
+		// Admin routes
+		r.Post("/api/admin/user/delete", userHandler.AdminDeleteUser)
+		r.Post("/api/admin/users/list", userHandler.AdminListUsers)
+		r.Post("/api/admin/users/search", userHandler.AdminSearchUsers)
+		r.Post("/api/admin/user/update-role", userHandler.AdminUpdateUserRole)
 	})
 
 	// Start HTTP server
