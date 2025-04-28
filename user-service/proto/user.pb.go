@@ -1448,7 +1448,7 @@ const file_proto_user_proto_rawDesc = "" +
 	"\x0fAdminDeleteUser\x12\x1c.user.AdminDeleteUserRequest\x1a\x1d.user.AdminDeleteUserResponse\x12K\n" +
 	"\x0eAdminListUsers\x12\x1b.user.AdminListUsersRequest\x1a\x1c.user.AdminListUsersResponse\x12Q\n" +
 	"\x10AdminSearchUsers\x12\x1d.user.AdminSearchUsersRequest\x1a\x1e.user.AdminSearchUsersResponse\x12Z\n" +
-	"\x13AdminUpdateUserRole\x12 .user.AdminUpdateUserRoleRequest\x1a!.user.AdminUpdateUserRoleResponseB\bZ\x06.;userb\x06proto3"
+	"\x13AdminUpdateUserRole\x12 .user.AdminUpdateUserRoleRequest\x1a!.user.AdminUpdateUserRoleResponseBCZAgithub.com/Abdurahmanit/GroupProject/user-service/proto/user;userb\x06proto3"
 
 var (
 	file_proto_user_proto_rawDescOnce sync.Once
