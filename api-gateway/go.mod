@@ -3,7 +3,7 @@ module github.com/Abdurahmanit/GroupProject/api-gateway
 go 1.23.4
 
 require (
-	github.com/Abdurahmanit/GroupProject/user-service v0.0.0-20250427214739-eeff64fd76d4
+	github.com/Abdurahmanit/GroupProject/user-service v0.0.0-20250427214739-eeff64fd76d4 //go get github.com/Abdurahmanit/GroupProject/user-service@latest
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/spf13/viper v1.20.1
