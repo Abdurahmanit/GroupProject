@@ -5,6 +5,8 @@ import (
 	"errors"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/entity"
 	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/bson"
@@ -90,8 +92,8 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*ent
 		Role:            doc["role"].(string),
 		IsEmailVerified: doc["is_email_verified"].(bool),
 		IsActive:        doc["is_active"].(bool),
-		CreatedAt:       doc["created_at"].(time.Time),
-		UpdatedAt:       doc["updated_at"].(time.Time),
+		CreatedAt:       doc["created_at"].(primitive.DateTime).Time(),
+		UpdatedAt:       doc["updated_at"].(primitive.DateTime).Time(),
 	}
 	return user, nil
 }
@@ -114,8 +116,8 @@ func (r *UserRepository) GetUserByID(ctx context.Context, userID string) (*entit
 		Role:            doc["role"].(string),
 		IsEmailVerified: doc["is_email_verified"].(bool),
 		IsActive:        doc["is_active"].(bool),
-		CreatedAt:       doc["created_at"].(time.Time),
-		UpdatedAt:       doc["updated_at"].(time.Time),
+		CreatedAt:       doc["created_at"].(primitive.DateTime).Time(),
+		UpdatedAt:       doc["updated_at"].(primitive.DateTime).Time(),
 	}
 	return user, nil
 }
@@ -229,8 +231,8 @@ func (r *UserRepository) ListUsers(ctx context.Context, skip, limit int64) ([]*e
 			Role:            doc["role"].(string),
 			IsEmailVerified: doc["is_email_verified"].(bool),
 			IsActive:        doc["is_active"].(bool),
-			CreatedAt:       doc["created_at"].(time.Time),
-			UpdatedAt:       doc["updated_at"].(time.Time),
+			CreatedAt:       doc["created_at"].(primitive.DateTime).Time(),
+			UpdatedAt:       doc["updated_at"].(primitive.DateTime).Time(),
 		}
 		users = append(users, user)
 	}
@@ -278,8 +280,8 @@ func (r *UserRepository) SearchUsers(ctx context.Context, query string, skip, li
 			Role:            doc["role"].(string),
 			IsEmailVerified: doc["is_email_verified"].(bool),
 			IsActive:        doc["is_active"].(bool),
-			CreatedAt:       doc["created_at"].(time.Time),
-			UpdatedAt:       doc["updated_at"].(time.Time),
+			CreatedAt:       doc["created_at"].(primitive.DateTime).Time(),
+			UpdatedAt:       doc["updated_at"].(primitive.DateTime).Time(),
 		}
 		users = append(users, user)
 	}
