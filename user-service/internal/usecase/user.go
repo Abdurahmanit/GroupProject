@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/entity"
+	"github.com/Abdurahmanit/GroupProject/user-service/internal/jwt"
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/repository"
 	"github.com/gofrs/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -38,7 +39,7 @@ func (u *UserUsecase) Register(ctx context.Context, username, email, password st
 		ID:              userID.String(),
 		Username:        username,
 		Email:           email,
-		Password:        password, // Will be hashed in the repository
+		Password:        password,
 		Role:            "customer",
 		IsEmailVerified: false,
 		IsActive:        true,
@@ -72,22 +73,12 @@ func (u *UserUsecase) Login(ctx context.Context, email, password string) (string
 		return "", ErrInvalidCredentials
 	}
 
-	token, err := u.repo.GetToken(ctx, user.ID)
+	tokenString, err := jwt.GenerateToken(user.ID, u.jwtSecret)
 	if err != nil {
-		return "", err
-	}
-	if token != "" {
-		return token, nil
+		return "", errors.New("failed to generate token")
 	}
 
-	// Generate a new token (simplified for this example; in production, use JWT)
-	token = uuid.Must(uuid.NewV4()).String()
-	err = u.repo.CacheToken(ctx, user.ID, token)
-	if err != nil {
-		return "", err
-	}
-
-	return token, nil
+	return tokenString, nil
 }
 
 func (u *UserUsecase) Logout(ctx context.Context, userID string) error {
@@ -159,16 +150,17 @@ func (u *UserUsecase) DeleteUser(ctx context.Context, userID string) error {
 		return err
 	}
 	if !user.IsActive {
+		// Or perhaps allow deleting an inactive user by an admin?
 		return ErrUnauthorized
 	}
 
-	return u.repo.DeleteUser(ctx, userID)
+	return u.repo.DeleteUser(ctx, userID) // Soft delete
 }
 
 func (u *UserUsecase) AdminDeleteUser(ctx context.Context, adminID, userID string) error {
 	admin, err := u.repo.GetUserByID(ctx, adminID)
 	if err != nil {
-		return err
+		return err // Or specific error for admin not found
 	}
 	if admin.Role != "admin" {
 		return ErrUnauthorized
@@ -214,9 +206,10 @@ func (u *UserUsecase) AdminUpdateUserRole(ctx context.Context, adminID, userID, 
 	if err != nil {
 		return err
 	}
-	if !user.IsActive {
-		return ErrUnauthorized
-	}
+	// Consider if you want to allow role update for inactive users
+	// if !user.IsActive {
+	// 	return ErrUnauthorized // Or a specific error like "user is inactive"
+	// }
 
 	user.Role = role
 	user.UpdatedAt = time.Now()
