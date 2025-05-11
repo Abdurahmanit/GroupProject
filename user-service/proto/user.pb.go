@@ -83,7 +83,7 @@ func (x *RegisterRequest) GetPassword() string {
 
 type RegisterResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // Will be ObjectID().Hex()
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -179,7 +179,7 @@ func (x *LoginRequest) GetPassword() string {
 
 type LoginResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"` // JWT
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -223,7 +223,7 @@ func (x *LoginResponse) GetToken() string {
 
 type LogoutRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // ObjectID().Hex() from JWT
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -311,7 +311,7 @@ func (x *LogoutResponse) GetSuccess() bool {
 
 type GetProfileRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // ObjectID().Hex() from JWT
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -354,16 +354,17 @@ func (x *GetProfileRequest) GetUserId() string {
 }
 
 type GetProfileResponse struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	Username        string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
-	Email           string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	Role            string                 `protobuf:"bytes,3,opt,name=role,proto3" json:"role,omitempty"`
-	IsEmailVerified bool                   `protobuf:"varint,4,opt,name=is_email_verified,json=isEmailVerified,proto3" json:"is_email_verified,omitempty"`
-	IsActive        bool                   `protobuf:"varint,5,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`
-	CreatedAt       string                 `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt       string                 `protobuf:"bytes,7,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	UserId   string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // ObjectID().Hex()
+	Username string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	Email    string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
+	Role     string                 `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`
+	// is_email_verified field removed
+	IsActive      bool   `protobuf:"varint,5,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`   // Field number adjusted
+	CreatedAt     string `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"` // RFC3339, field number adjusted
+	UpdatedAt     string `protobuf:"bytes,7,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"` // RFC3339, field number adjusted
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetProfileResponse) Reset() {
@@ -396,6 +397,13 @@ func (*GetProfileResponse) Descriptor() ([]byte, []int) {
 	return file_proto_user_proto_rawDescGZIP(), []int{7}
 }
 
+func (x *GetProfileResponse) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
 func (x *GetProfileResponse) GetUsername() string {
 	if x != nil {
 		return x.Username
@@ -415,13 +423,6 @@ func (x *GetProfileResponse) GetRole() string {
 		return x.Role
 	}
 	return ""
-}
-
-func (x *GetProfileResponse) GetIsEmailVerified() bool {
-	if x != nil {
-		return x.IsEmailVerified
-	}
-	return false
 }
 
 func (x *GetProfileResponse) GetIsActive() bool {
@@ -447,7 +448,7 @@ func (x *GetProfileResponse) GetUpdatedAt() string {
 
 type UpdateProfileRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // ObjectID().Hex() from JWT
 	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
 	Email         string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -551,7 +552,7 @@ func (x *UpdateProfileResponse) GetSuccess() bool {
 
 type ChangePasswordRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // ObjectID().Hex() from JWT
 	OldPassword   string                 `protobuf:"bytes,2,opt,name=old_password,json=oldPassword,proto3" json:"old_password,omitempty"`
 	NewPassword   string                 `protobuf:"bytes,3,opt,name=new_password,json=newPassword,proto3" json:"new_password,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -653,104 +654,16 @@ func (x *ChangePasswordResponse) GetSuccess() bool {
 	return false
 }
 
-type VerifyEmailRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *VerifyEmailRequest) Reset() {
-	*x = VerifyEmailRequest{}
-	mi := &file_proto_user_proto_msgTypes[12]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *VerifyEmailRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*VerifyEmailRequest) ProtoMessage() {}
-
-func (x *VerifyEmailRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_user_proto_msgTypes[12]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use VerifyEmailRequest.ProtoReflect.Descriptor instead.
-func (*VerifyEmailRequest) Descriptor() ([]byte, []int) {
-	return file_proto_user_proto_rawDescGZIP(), []int{12}
-}
-
-func (x *VerifyEmailRequest) GetUserId() string {
-	if x != nil {
-		return x.UserId
-	}
-	return ""
-}
-
-type VerifyEmailResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *VerifyEmailResponse) Reset() {
-	*x = VerifyEmailResponse{}
-	mi := &file_proto_user_proto_msgTypes[13]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *VerifyEmailResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*VerifyEmailResponse) ProtoMessage() {}
-
-func (x *VerifyEmailResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_user_proto_msgTypes[13]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use VerifyEmailResponse.ProtoReflect.Descriptor instead.
-func (*VerifyEmailResponse) Descriptor() ([]byte, []int) {
-	return file_proto_user_proto_rawDescGZIP(), []int{13}
-}
-
-func (x *VerifyEmailResponse) GetSuccess() bool {
-	if x != nil {
-		return x.Success
-	}
-	return false
-}
-
 type DeleteUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // ObjectID().Hex() from JWT
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DeleteUserRequest) Reset() {
 	*x = DeleteUserRequest{}
-	mi := &file_proto_user_proto_msgTypes[14]
+	mi := &file_proto_user_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -762,7 +675,7 @@ func (x *DeleteUserRequest) String() string {
 func (*DeleteUserRequest) ProtoMessage() {}
 
 func (x *DeleteUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_user_proto_msgTypes[14]
+	mi := &file_proto_user_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -775,7 +688,7 @@ func (x *DeleteUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteUserRequest.ProtoReflect.Descriptor instead.
 func (*DeleteUserRequest) Descriptor() ([]byte, []int) {
-	return file_proto_user_proto_rawDescGZIP(), []int{14}
+	return file_proto_user_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *DeleteUserRequest) GetUserId() string {
@@ -794,7 +707,7 @@ type DeleteUserResponse struct {
 
 func (x *DeleteUserResponse) Reset() {
 	*x = DeleteUserResponse{}
-	mi := &file_proto_user_proto_msgTypes[15]
+	mi := &file_proto_user_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -806,7 +719,7 @@ func (x *DeleteUserResponse) String() string {
 func (*DeleteUserResponse) ProtoMessage() {}
 
 func (x *DeleteUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_user_proto_msgTypes[15]
+	mi := &file_proto_user_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -819,7 +732,7 @@ func (x *DeleteUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteUserResponse.ProtoReflect.Descriptor instead.
 func (*DeleteUserResponse) Descriptor() ([]byte, []int) {
-	return file_proto_user_proto_rawDescGZIP(), []int{15}
+	return file_proto_user_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *DeleteUserResponse) GetSuccess() bool {
@@ -829,12 +742,100 @@ func (x *DeleteUserResponse) GetSuccess() bool {
 	return false
 }
 
-type AdminDeleteUserRequest struct {
+type DeactivateUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	AdminId       string                 `protobuf:"bytes,1,opt,name=admin_id,json=adminId,proto3" json:"admin_id,omitempty"`
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // ObjectID().Hex() from JWT
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeactivateUserRequest) Reset() {
+	*x = DeactivateUserRequest{}
+	mi := &file_proto_user_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeactivateUserRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeactivateUserRequest) ProtoMessage() {}
+
+func (x *DeactivateUserRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeactivateUserRequest.ProtoReflect.Descriptor instead.
+func (*DeactivateUserRequest) Descriptor() ([]byte, []int) {
+	return file_proto_user_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *DeactivateUserRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type DeactivateUserResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeactivateUserResponse) Reset() {
+	*x = DeactivateUserResponse{}
+	mi := &file_proto_user_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeactivateUserResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeactivateUserResponse) ProtoMessage() {}
+
+func (x *DeactivateUserResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeactivateUserResponse.ProtoReflect.Descriptor instead.
+func (*DeactivateUserResponse) Descriptor() ([]byte, []int) {
+	return file_proto_user_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *DeactivateUserResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+type AdminDeleteUserRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	AdminId        string                 `protobuf:"bytes,1,opt,name=admin_id,json=adminId,proto3" json:"admin_id,omitempty"`                          // Admin's ObjectID().Hex() from JWT
+	UserIdToDelete string                 `protobuf:"bytes,2,opt,name=user_id_to_delete,json=userIdToDelete,proto3" json:"user_id_to_delete,omitempty"` // Target user's ObjectID().Hex()
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *AdminDeleteUserRequest) Reset() {
@@ -874,9 +875,9 @@ func (x *AdminDeleteUserRequest) GetAdminId() string {
 	return ""
 }
 
-func (x *AdminDeleteUserRequest) GetUserId() string {
+func (x *AdminDeleteUserRequest) GetUserIdToDelete() string {
 	if x != nil {
-		return x.UserId
+		return x.UserIdToDelete
 	}
 	return ""
 }
@@ -927,7 +928,7 @@ func (x *AdminDeleteUserResponse) GetSuccess() bool {
 
 type AdminListUsersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	AdminId       string                 `protobuf:"bytes,1,opt,name=admin_id,json=adminId,proto3" json:"admin_id,omitempty"`
+	AdminId       string                 `protobuf:"bytes,1,opt,name=admin_id,json=adminId,proto3" json:"admin_id,omitempty"` // Admin's ObjectID().Hex() from JWT
 	Skip          int64                  `protobuf:"varint,2,opt,name=skip,proto3" json:"skip,omitempty"`
 	Limit         int64                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1031,7 +1032,7 @@ func (x *AdminListUsersResponse) GetUsers() []*User {
 
 type AdminSearchUsersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	AdminId       string                 `protobuf:"bytes,1,opt,name=admin_id,json=adminId,proto3" json:"admin_id,omitempty"`
+	AdminId       string                 `protobuf:"bytes,1,opt,name=admin_id,json=adminId,proto3" json:"admin_id,omitempty"` // Admin's ObjectID().Hex() from JWT
 	Query         string                 `protobuf:"bytes,2,opt,name=query,proto3" json:"query,omitempty"`
 	Skip          int64                  `protobuf:"varint,3,opt,name=skip,proto3" json:"skip,omitempty"`
 	Limit         int64                  `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
@@ -1142,12 +1143,12 @@ func (x *AdminSearchUsersResponse) GetUsers() []*User {
 }
 
 type AdminUpdateUserRoleRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AdminId       string                 `protobuf:"bytes,1,opt,name=admin_id,json=adminId,proto3" json:"admin_id,omitempty"`
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Role          string                 `protobuf:"bytes,3,opt,name=role,proto3" json:"role,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	AdminId        string                 `protobuf:"bytes,1,opt,name=admin_id,json=adminId,proto3" json:"admin_id,omitempty"`                          // Admin's ObjectID().Hex() from JWT
+	UserIdToUpdate string                 `protobuf:"bytes,2,opt,name=user_id_to_update,json=userIdToUpdate,proto3" json:"user_id_to_update,omitempty"` // Target user's ObjectID().Hex()
+	Role           string                 `protobuf:"bytes,3,opt,name=role,proto3" json:"role,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *AdminUpdateUserRoleRequest) Reset() {
@@ -1187,9 +1188,9 @@ func (x *AdminUpdateUserRoleRequest) GetAdminId() string {
 	return ""
 }
 
-func (x *AdminUpdateUserRoleRequest) GetUserId() string {
+func (x *AdminUpdateUserRoleRequest) GetUserIdToUpdate() string {
 	if x != nil {
-		return x.UserId
+		return x.UserIdToUpdate
 	}
 	return ""
 }
@@ -1245,23 +1246,127 @@ func (x *AdminUpdateUserRoleResponse) GetSuccess() bool {
 	return false
 }
 
+type AdminSetUserActiveStatusRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AdminId       string                 `protobuf:"bytes,1,opt,name=admin_id,json=adminId,proto3" json:"admin_id,omitempty"` // Admin's ObjectID().Hex() from JWT
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`    // Target user's ObjectID().Hex()
+	IsActive      bool                   `protobuf:"varint,3,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminSetUserActiveStatusRequest) Reset() {
+	*x = AdminSetUserActiveStatusRequest{}
+	mi := &file_proto_user_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminSetUserActiveStatusRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminSetUserActiveStatusRequest) ProtoMessage() {}
+
+func (x *AdminSetUserActiveStatusRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminSetUserActiveStatusRequest.ProtoReflect.Descriptor instead.
+func (*AdminSetUserActiveStatusRequest) Descriptor() ([]byte, []int) {
+	return file_proto_user_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *AdminSetUserActiveStatusRequest) GetAdminId() string {
+	if x != nil {
+		return x.AdminId
+	}
+	return ""
+}
+
+func (x *AdminSetUserActiveStatusRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *AdminSetUserActiveStatusRequest) GetIsActive() bool {
+	if x != nil {
+		return x.IsActive
+	}
+	return false
+}
+
+type AdminSetUserActiveStatusResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminSetUserActiveStatusResponse) Reset() {
+	*x = AdminSetUserActiveStatusResponse{}
+	mi := &file_proto_user_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminSetUserActiveStatusResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminSetUserActiveStatusResponse) ProtoMessage() {}
+
+func (x *AdminSetUserActiveStatusResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_user_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminSetUserActiveStatusResponse.ProtoReflect.Descriptor instead.
+func (*AdminSetUserActiveStatusResponse) Descriptor() ([]byte, []int) {
+	return file_proto_user_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *AdminSetUserActiveStatusResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
 type User struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	UserId          string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Username        string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
-	Email           string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
-	Role            string                 `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`
-	IsEmailVerified bool                   `protobuf:"varint,5,opt,name=is_email_verified,json=isEmailVerified,proto3" json:"is_email_verified,omitempty"`
-	IsActive        bool                   `protobuf:"varint,6,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`
-	CreatedAt       string                 `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt       string                 `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	UserId   string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // ObjectID().Hex()
+	Username string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	Email    string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
+	Role     string                 `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`
+	// is_email_verified field removed
+	IsActive      bool   `protobuf:"varint,5,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`   // Field number adjusted
+	CreatedAt     string `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"` // RFC3339, field number adjusted
+	UpdatedAt     string `protobuf:"bytes,7,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"` // RFC3339, field number adjusted
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *User) Reset() {
 	*x = User{}
-	mi := &file_proto_user_proto_msgTypes[24]
+	mi := &file_proto_user_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1273,7 +1378,7 @@ func (x *User) String() string {
 func (*User) ProtoMessage() {}
 
 func (x *User) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_user_proto_msgTypes[24]
+	mi := &file_proto_user_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1286,7 +1391,7 @@ func (x *User) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use User.ProtoReflect.Descriptor instead.
 func (*User) Descriptor() ([]byte, []int) {
-	return file_proto_user_proto_rawDescGZIP(), []int{24}
+	return file_proto_user_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *User) GetUserId() string {
@@ -1315,13 +1420,6 @@ func (x *User) GetRole() string {
 		return x.Role
 	}
 	return ""
-}
-
-func (x *User) GetIsEmailVerified() bool {
-	if x != nil {
-		return x.IsEmailVerified
-	}
-	return false
 }
 
 func (x *User) GetIsActive() bool {
@@ -1366,12 +1464,12 @@ const file_proto_user_proto_rawDesc = "" +
 	"\x0eLogoutResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\",\n" +
 	"\x11GetProfileRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"\xe1\x01\n" +
-	"\x12GetProfileResponse\x12\x1a\n" +
-	"\busername\x18\x01 \x01(\tR\busername\x12\x14\n" +
-	"\x05email\x18\x02 \x01(\tR\x05email\x12\x12\n" +
-	"\x04role\x18\x03 \x01(\tR\x04role\x12*\n" +
-	"\x11is_email_verified\x18\x04 \x01(\bR\x0fisEmailVerified\x12\x1b\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"\xce\x01\n" +
+	"\x12GetProfileResponse\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
+	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
+	"\x05email\x18\x03 \x01(\tR\x05email\x12\x12\n" +
+	"\x04role\x18\x04 \x01(\tR\x04role\x12\x1b\n" +
 	"\tis_active\x18\x05 \x01(\bR\bisActive\x12\x1d\n" +
 	"\n" +
 	"created_at\x18\x06 \x01(\tR\tcreatedAt\x12\x1d\n" +
@@ -1388,18 +1486,18 @@ const file_proto_user_proto_rawDesc = "" +
 	"\fold_password\x18\x02 \x01(\tR\voldPassword\x12!\n" +
 	"\fnew_password\x18\x03 \x01(\tR\vnewPassword\"2\n" +
 	"\x16ChangePasswordResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\"-\n" +
-	"\x12VerifyEmailRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"/\n" +
-	"\x13VerifyEmailResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\",\n" +
 	"\x11DeleteUserRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\".\n" +
 	"\x12DeleteUserResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\"L\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"0\n" +
+	"\x15DeactivateUserRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"2\n" +
+	"\x16DeactivateUserResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"^\n" +
 	"\x16AdminDeleteUserRequest\x12\x19\n" +
-	"\badmin_id\x18\x01 \x01(\tR\aadminId\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\"3\n" +
+	"\badmin_id\x18\x01 \x01(\tR\aadminId\x12)\n" +
+	"\x11user_id_to_delete\x18\x02 \x01(\tR\x0euserIdToDelete\"3\n" +
 	"\x17AdminDeleteUserResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\"\\\n" +
 	"\x15AdminListUsersRequest\x12\x19\n" +
@@ -1416,24 +1514,29 @@ const file_proto_user_proto_rawDesc = "" +
 	"\x05limit\x18\x04 \x01(\x03R\x05limit\"<\n" +
 	"\x18AdminSearchUsersResponse\x12 \n" +
 	"\x05users\x18\x01 \x03(\v2\n" +
-	".user.UserR\x05users\"d\n" +
+	".user.UserR\x05users\"v\n" +
 	"\x1aAdminUpdateUserRoleRequest\x12\x19\n" +
-	"\badmin_id\x18\x01 \x01(\tR\aadminId\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x12\n" +
+	"\badmin_id\x18\x01 \x01(\tR\aadminId\x12)\n" +
+	"\x11user_id_to_update\x18\x02 \x01(\tR\x0euserIdToUpdate\x12\x12\n" +
 	"\x04role\x18\x03 \x01(\tR\x04role\"7\n" +
 	"\x1bAdminUpdateUserRoleResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\"\xec\x01\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"r\n" +
+	"\x1fAdminSetUserActiveStatusRequest\x12\x19\n" +
+	"\badmin_id\x18\x01 \x01(\tR\aadminId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x1b\n" +
+	"\tis_active\x18\x03 \x01(\bR\bisActive\"<\n" +
+	" AdminSetUserActiveStatusResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"\xc0\x01\n" +
 	"\x04User\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
 	"\x05email\x18\x03 \x01(\tR\x05email\x12\x12\n" +
-	"\x04role\x18\x04 \x01(\tR\x04role\x12*\n" +
-	"\x11is_email_verified\x18\x05 \x01(\bR\x0fisEmailVerified\x12\x1b\n" +
-	"\tis_active\x18\x06 \x01(\bR\bisActive\x12\x1d\n" +
+	"\x04role\x18\x04 \x01(\tR\x04role\x12\x1b\n" +
+	"\tis_active\x18\x05 \x01(\bR\bisActive\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\a \x01(\tR\tcreatedAt\x12\x1d\n" +
+	"created_at\x18\x06 \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\b \x01(\tR\tupdatedAt2\xd8\x06\n" +
+	"updated_at\x18\a \x01(\tR\tupdatedAt2\xcc\a\n" +
 	"\vUserService\x129\n" +
 	"\bRegister\x12\x15.user.RegisterRequest\x1a\x16.user.RegisterResponse\x120\n" +
 	"\x05Login\x12\x12.user.LoginRequest\x1a\x13.user.LoginResponse\x123\n" +
@@ -1441,14 +1544,15 @@ const file_proto_user_proto_rawDesc = "" +
 	"\n" +
 	"GetProfile\x12\x17.user.GetProfileRequest\x1a\x18.user.GetProfileResponse\x12H\n" +
 	"\rUpdateProfile\x12\x1a.user.UpdateProfileRequest\x1a\x1b.user.UpdateProfileResponse\x12K\n" +
-	"\x0eChangePassword\x12\x1b.user.ChangePasswordRequest\x1a\x1c.user.ChangePasswordResponse\x12B\n" +
-	"\vVerifyEmail\x12\x18.user.VerifyEmailRequest\x1a\x19.user.VerifyEmailResponse\x12?\n" +
+	"\x0eChangePassword\x12\x1b.user.ChangePasswordRequest\x1a\x1c.user.ChangePasswordResponse\x12?\n" +
 	"\n" +
-	"DeleteUser\x12\x17.user.DeleteUserRequest\x1a\x18.user.DeleteUserResponse\x12N\n" +
+	"DeleteUser\x12\x17.user.DeleteUserRequest\x1a\x18.user.DeleteUserResponse\x12K\n" +
+	"\x0eDeactivateUser\x12\x1b.user.DeactivateUserRequest\x1a\x1c.user.DeactivateUserResponse\x12N\n" +
 	"\x0fAdminDeleteUser\x12\x1c.user.AdminDeleteUserRequest\x1a\x1d.user.AdminDeleteUserResponse\x12K\n" +
 	"\x0eAdminListUsers\x12\x1b.user.AdminListUsersRequest\x1a\x1c.user.AdminListUsersResponse\x12Q\n" +
 	"\x10AdminSearchUsers\x12\x1d.user.AdminSearchUsersRequest\x1a\x1e.user.AdminSearchUsersResponse\x12Z\n" +
-	"\x13AdminUpdateUserRole\x12 .user.AdminUpdateUserRoleRequest\x1a!.user.AdminUpdateUserRoleResponseBCZAgithub.com/Abdurahmanit/GroupProject/user-service/proto/user;userb\x06proto3"
+	"\x13AdminUpdateUserRole\x12 .user.AdminUpdateUserRoleRequest\x1a!.user.AdminUpdateUserRoleResponse\x12i\n" +
+	"\x18AdminSetUserActiveStatus\x12%.user.AdminSetUserActiveStatusRequest\x1a&.user.AdminSetUserActiveStatusResponseBCZAgithub.com/Abdurahmanit/GroupProject/user-service/proto/user;userb\x06proto3"
 
 var (
 	file_proto_user_proto_rawDescOnce sync.Once
@@ -1462,63 +1566,67 @@ func file_proto_user_proto_rawDescGZIP() []byte {
 	return file_proto_user_proto_rawDescData
 }
 
-var file_proto_user_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
+var file_proto_user_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
 var file_proto_user_proto_goTypes = []any{
-	(*RegisterRequest)(nil),             // 0: user.RegisterRequest
-	(*RegisterResponse)(nil),            // 1: user.RegisterResponse
-	(*LoginRequest)(nil),                // 2: user.LoginRequest
-	(*LoginResponse)(nil),               // 3: user.LoginResponse
-	(*LogoutRequest)(nil),               // 4: user.LogoutRequest
-	(*LogoutResponse)(nil),              // 5: user.LogoutResponse
-	(*GetProfileRequest)(nil),           // 6: user.GetProfileRequest
-	(*GetProfileResponse)(nil),          // 7: user.GetProfileResponse
-	(*UpdateProfileRequest)(nil),        // 8: user.UpdateProfileRequest
-	(*UpdateProfileResponse)(nil),       // 9: user.UpdateProfileResponse
-	(*ChangePasswordRequest)(nil),       // 10: user.ChangePasswordRequest
-	(*ChangePasswordResponse)(nil),      // 11: user.ChangePasswordResponse
-	(*VerifyEmailRequest)(nil),          // 12: user.VerifyEmailRequest
-	(*VerifyEmailResponse)(nil),         // 13: user.VerifyEmailResponse
-	(*DeleteUserRequest)(nil),           // 14: user.DeleteUserRequest
-	(*DeleteUserResponse)(nil),          // 15: user.DeleteUserResponse
-	(*AdminDeleteUserRequest)(nil),      // 16: user.AdminDeleteUserRequest
-	(*AdminDeleteUserResponse)(nil),     // 17: user.AdminDeleteUserResponse
-	(*AdminListUsersRequest)(nil),       // 18: user.AdminListUsersRequest
-	(*AdminListUsersResponse)(nil),      // 19: user.AdminListUsersResponse
-	(*AdminSearchUsersRequest)(nil),     // 20: user.AdminSearchUsersRequest
-	(*AdminSearchUsersResponse)(nil),    // 21: user.AdminSearchUsersResponse
-	(*AdminUpdateUserRoleRequest)(nil),  // 22: user.AdminUpdateUserRoleRequest
-	(*AdminUpdateUserRoleResponse)(nil), // 23: user.AdminUpdateUserRoleResponse
-	(*User)(nil),                        // 24: user.User
+	(*RegisterRequest)(nil),                  // 0: user.RegisterRequest
+	(*RegisterResponse)(nil),                 // 1: user.RegisterResponse
+	(*LoginRequest)(nil),                     // 2: user.LoginRequest
+	(*LoginResponse)(nil),                    // 3: user.LoginResponse
+	(*LogoutRequest)(nil),                    // 4: user.LogoutRequest
+	(*LogoutResponse)(nil),                   // 5: user.LogoutResponse
+	(*GetProfileRequest)(nil),                // 6: user.GetProfileRequest
+	(*GetProfileResponse)(nil),               // 7: user.GetProfileResponse
+	(*UpdateProfileRequest)(nil),             // 8: user.UpdateProfileRequest
+	(*UpdateProfileResponse)(nil),            // 9: user.UpdateProfileResponse
+	(*ChangePasswordRequest)(nil),            // 10: user.ChangePasswordRequest
+	(*ChangePasswordResponse)(nil),           // 11: user.ChangePasswordResponse
+	(*DeleteUserRequest)(nil),                // 12: user.DeleteUserRequest
+	(*DeleteUserResponse)(nil),               // 13: user.DeleteUserResponse
+	(*DeactivateUserRequest)(nil),            // 14: user.DeactivateUserRequest
+	(*DeactivateUserResponse)(nil),           // 15: user.DeactivateUserResponse
+	(*AdminDeleteUserRequest)(nil),           // 16: user.AdminDeleteUserRequest
+	(*AdminDeleteUserResponse)(nil),          // 17: user.AdminDeleteUserResponse
+	(*AdminListUsersRequest)(nil),            // 18: user.AdminListUsersRequest
+	(*AdminListUsersResponse)(nil),           // 19: user.AdminListUsersResponse
+	(*AdminSearchUsersRequest)(nil),          // 20: user.AdminSearchUsersRequest
+	(*AdminSearchUsersResponse)(nil),         // 21: user.AdminSearchUsersResponse
+	(*AdminUpdateUserRoleRequest)(nil),       // 22: user.AdminUpdateUserRoleRequest
+	(*AdminUpdateUserRoleResponse)(nil),      // 23: user.AdminUpdateUserRoleResponse
+	(*AdminSetUserActiveStatusRequest)(nil),  // 24: user.AdminSetUserActiveStatusRequest
+	(*AdminSetUserActiveStatusResponse)(nil), // 25: user.AdminSetUserActiveStatusResponse
+	(*User)(nil),                             // 26: user.User
 }
 var file_proto_user_proto_depIdxs = []int32{
-	24, // 0: user.AdminListUsersResponse.users:type_name -> user.User
-	24, // 1: user.AdminSearchUsersResponse.users:type_name -> user.User
+	26, // 0: user.AdminListUsersResponse.users:type_name -> user.User
+	26, // 1: user.AdminSearchUsersResponse.users:type_name -> user.User
 	0,  // 2: user.UserService.Register:input_type -> user.RegisterRequest
 	2,  // 3: user.UserService.Login:input_type -> user.LoginRequest
 	4,  // 4: user.UserService.Logout:input_type -> user.LogoutRequest
 	6,  // 5: user.UserService.GetProfile:input_type -> user.GetProfileRequest
 	8,  // 6: user.UserService.UpdateProfile:input_type -> user.UpdateProfileRequest
 	10, // 7: user.UserService.ChangePassword:input_type -> user.ChangePasswordRequest
-	12, // 8: user.UserService.VerifyEmail:input_type -> user.VerifyEmailRequest
-	14, // 9: user.UserService.DeleteUser:input_type -> user.DeleteUserRequest
+	12, // 8: user.UserService.DeleteUser:input_type -> user.DeleteUserRequest
+	14, // 9: user.UserService.DeactivateUser:input_type -> user.DeactivateUserRequest
 	16, // 10: user.UserService.AdminDeleteUser:input_type -> user.AdminDeleteUserRequest
 	18, // 11: user.UserService.AdminListUsers:input_type -> user.AdminListUsersRequest
 	20, // 12: user.UserService.AdminSearchUsers:input_type -> user.AdminSearchUsersRequest
 	22, // 13: user.UserService.AdminUpdateUserRole:input_type -> user.AdminUpdateUserRoleRequest
-	1,  // 14: user.UserService.Register:output_type -> user.RegisterResponse
-	3,  // 15: user.UserService.Login:output_type -> user.LoginResponse
-	5,  // 16: user.UserService.Logout:output_type -> user.LogoutResponse
-	7,  // 17: user.UserService.GetProfile:output_type -> user.GetProfileResponse
-	9,  // 18: user.UserService.UpdateProfile:output_type -> user.UpdateProfileResponse
-	11, // 19: user.UserService.ChangePassword:output_type -> user.ChangePasswordResponse
-	13, // 20: user.UserService.VerifyEmail:output_type -> user.VerifyEmailResponse
-	15, // 21: user.UserService.DeleteUser:output_type -> user.DeleteUserResponse
-	17, // 22: user.UserService.AdminDeleteUser:output_type -> user.AdminDeleteUserResponse
-	19, // 23: user.UserService.AdminListUsers:output_type -> user.AdminListUsersResponse
-	21, // 24: user.UserService.AdminSearchUsers:output_type -> user.AdminSearchUsersResponse
-	23, // 25: user.UserService.AdminUpdateUserRole:output_type -> user.AdminUpdateUserRoleResponse
-	14, // [14:26] is the sub-list for method output_type
-	2,  // [2:14] is the sub-list for method input_type
+	24, // 14: user.UserService.AdminSetUserActiveStatus:input_type -> user.AdminSetUserActiveStatusRequest
+	1,  // 15: user.UserService.Register:output_type -> user.RegisterResponse
+	3,  // 16: user.UserService.Login:output_type -> user.LoginResponse
+	5,  // 17: user.UserService.Logout:output_type -> user.LogoutResponse
+	7,  // 18: user.UserService.GetProfile:output_type -> user.GetProfileResponse
+	9,  // 19: user.UserService.UpdateProfile:output_type -> user.UpdateProfileResponse
+	11, // 20: user.UserService.ChangePassword:output_type -> user.ChangePasswordResponse
+	13, // 21: user.UserService.DeleteUser:output_type -> user.DeleteUserResponse
+	15, // 22: user.UserService.DeactivateUser:output_type -> user.DeactivateUserResponse
+	17, // 23: user.UserService.AdminDeleteUser:output_type -> user.AdminDeleteUserResponse
+	19, // 24: user.UserService.AdminListUsers:output_type -> user.AdminListUsersResponse
+	21, // 25: user.UserService.AdminSearchUsers:output_type -> user.AdminSearchUsersResponse
+	23, // 26: user.UserService.AdminUpdateUserRole:output_type -> user.AdminUpdateUserRoleResponse
+	25, // 27: user.UserService.AdminSetUserActiveStatus:output_type -> user.AdminSetUserActiveStatusResponse
+	15, // [15:28] is the sub-list for method output_type
+	2,  // [2:15] is the sub-list for method input_type
 	2,  // [2:2] is the sub-list for extension type_name
 	2,  // [2:2] is the sub-list for extension extendee
 	0,  // [0:2] is the sub-list for field type_name
@@ -1535,7 +1643,7 @@ func file_proto_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_user_proto_rawDesc), len(file_proto_user_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   25,
+			NumMessages:   27,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

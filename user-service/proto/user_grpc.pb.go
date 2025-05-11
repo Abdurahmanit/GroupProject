@@ -19,18 +19,19 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserService_Register_FullMethodName            = "/user.UserService/Register"
-	UserService_Login_FullMethodName               = "/user.UserService/Login"
-	UserService_Logout_FullMethodName              = "/user.UserService/Logout"
-	UserService_GetProfile_FullMethodName          = "/user.UserService/GetProfile"
-	UserService_UpdateProfile_FullMethodName       = "/user.UserService/UpdateProfile"
-	UserService_ChangePassword_FullMethodName      = "/user.UserService/ChangePassword"
-	UserService_VerifyEmail_FullMethodName         = "/user.UserService/VerifyEmail"
-	UserService_DeleteUser_FullMethodName          = "/user.UserService/DeleteUser"
-	UserService_AdminDeleteUser_FullMethodName     = "/user.UserService/AdminDeleteUser"
-	UserService_AdminListUsers_FullMethodName      = "/user.UserService/AdminListUsers"
-	UserService_AdminSearchUsers_FullMethodName    = "/user.UserService/AdminSearchUsers"
-	UserService_AdminUpdateUserRole_FullMethodName = "/user.UserService/AdminUpdateUserRole"
+	UserService_Register_FullMethodName                 = "/user.UserService/Register"
+	UserService_Login_FullMethodName                    = "/user.UserService/Login"
+	UserService_Logout_FullMethodName                   = "/user.UserService/Logout"
+	UserService_GetProfile_FullMethodName               = "/user.UserService/GetProfile"
+	UserService_UpdateProfile_FullMethodName            = "/user.UserService/UpdateProfile"
+	UserService_ChangePassword_FullMethodName           = "/user.UserService/ChangePassword"
+	UserService_DeleteUser_FullMethodName               = "/user.UserService/DeleteUser"
+	UserService_DeactivateUser_FullMethodName           = "/user.UserService/DeactivateUser"
+	UserService_AdminDeleteUser_FullMethodName          = "/user.UserService/AdminDeleteUser"
+	UserService_AdminListUsers_FullMethodName           = "/user.UserService/AdminListUsers"
+	UserService_AdminSearchUsers_FullMethodName         = "/user.UserService/AdminSearchUsers"
+	UserService_AdminUpdateUserRole_FullMethodName      = "/user.UserService/AdminUpdateUserRole"
+	UserService_AdminSetUserActiveStatus_FullMethodName = "/user.UserService/AdminSetUserActiveStatus"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -43,12 +44,14 @@ type UserServiceClient interface {
 	GetProfile(ctx context.Context, in *GetProfileRequest, opts ...grpc.CallOption) (*GetProfileResponse, error)
 	UpdateProfile(ctx context.Context, in *UpdateProfileRequest, opts ...grpc.CallOption) (*UpdateProfileResponse, error)
 	ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*ChangePasswordResponse, error)
-	VerifyEmail(ctx context.Context, in *VerifyEmailRequest, opts ...grpc.CallOption) (*VerifyEmailResponse, error)
 	DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error)
+	DeactivateUser(ctx context.Context, in *DeactivateUserRequest, opts ...grpc.CallOption) (*DeactivateUserResponse, error)
+	// Admin methods
 	AdminDeleteUser(ctx context.Context, in *AdminDeleteUserRequest, opts ...grpc.CallOption) (*AdminDeleteUserResponse, error)
 	AdminListUsers(ctx context.Context, in *AdminListUsersRequest, opts ...grpc.CallOption) (*AdminListUsersResponse, error)
 	AdminSearchUsers(ctx context.Context, in *AdminSearchUsersRequest, opts ...grpc.CallOption) (*AdminSearchUsersResponse, error)
 	AdminUpdateUserRole(ctx context.Context, in *AdminUpdateUserRoleRequest, opts ...grpc.CallOption) (*AdminUpdateUserRoleResponse, error)
+	AdminSetUserActiveStatus(ctx context.Context, in *AdminSetUserActiveStatusRequest, opts ...grpc.CallOption) (*AdminSetUserActiveStatusResponse, error)
 }
 
 type userServiceClient struct {
@@ -119,20 +122,20 @@ func (c *userServiceClient) ChangePassword(ctx context.Context, in *ChangePasswo
 	return out, nil
 }
 
-func (c *userServiceClient) VerifyEmail(ctx context.Context, in *VerifyEmailRequest, opts ...grpc.CallOption) (*VerifyEmailResponse, error) {
+func (c *userServiceClient) DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(VerifyEmailResponse)
-	err := c.cc.Invoke(ctx, UserService_VerifyEmail_FullMethodName, in, out, cOpts...)
+	out := new(DeleteUserResponse)
+	err := c.cc.Invoke(ctx, UserService_DeleteUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *userServiceClient) DeleteUser(ctx context.Context, in *DeleteUserRequest, opts ...grpc.CallOption) (*DeleteUserResponse, error) {
+func (c *userServiceClient) DeactivateUser(ctx context.Context, in *DeactivateUserRequest, opts ...grpc.CallOption) (*DeactivateUserResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeleteUserResponse)
-	err := c.cc.Invoke(ctx, UserService_DeleteUser_FullMethodName, in, out, cOpts...)
+	out := new(DeactivateUserResponse)
+	err := c.cc.Invoke(ctx, UserService_DeactivateUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -179,6 +182,16 @@ func (c *userServiceClient) AdminUpdateUserRole(ctx context.Context, in *AdminUp
 	return out, nil
 }
 
+func (c *userServiceClient) AdminSetUserActiveStatus(ctx context.Context, in *AdminSetUserActiveStatusRequest, opts ...grpc.CallOption) (*AdminSetUserActiveStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminSetUserActiveStatusResponse)
+	err := c.cc.Invoke(ctx, UserService_AdminSetUserActiveStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
@@ -189,12 +202,14 @@ type UserServiceServer interface {
 	GetProfile(context.Context, *GetProfileRequest) (*GetProfileResponse, error)
 	UpdateProfile(context.Context, *UpdateProfileRequest) (*UpdateProfileResponse, error)
 	ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error)
-	VerifyEmail(context.Context, *VerifyEmailRequest) (*VerifyEmailResponse, error)
 	DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error)
+	DeactivateUser(context.Context, *DeactivateUserRequest) (*DeactivateUserResponse, error)
+	// Admin methods
 	AdminDeleteUser(context.Context, *AdminDeleteUserRequest) (*AdminDeleteUserResponse, error)
 	AdminListUsers(context.Context, *AdminListUsersRequest) (*AdminListUsersResponse, error)
 	AdminSearchUsers(context.Context, *AdminSearchUsersRequest) (*AdminSearchUsersResponse, error)
 	AdminUpdateUserRole(context.Context, *AdminUpdateUserRoleRequest) (*AdminUpdateUserRoleResponse, error)
+	AdminSetUserActiveStatus(context.Context, *AdminSetUserActiveStatusRequest) (*AdminSetUserActiveStatusResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -223,11 +238,11 @@ func (UnimplementedUserServiceServer) UpdateProfile(context.Context, *UpdateProf
 func (UnimplementedUserServiceServer) ChangePassword(context.Context, *ChangePasswordRequest) (*ChangePasswordResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ChangePassword not implemented")
 }
-func (UnimplementedUserServiceServer) VerifyEmail(context.Context, *VerifyEmailRequest) (*VerifyEmailResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method VerifyEmail not implemented")
-}
 func (UnimplementedUserServiceServer) DeleteUser(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteUser not implemented")
+}
+func (UnimplementedUserServiceServer) DeactivateUser(context.Context, *DeactivateUserRequest) (*DeactivateUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeactivateUser not implemented")
 }
 func (UnimplementedUserServiceServer) AdminDeleteUser(context.Context, *AdminDeleteUserRequest) (*AdminDeleteUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AdminDeleteUser not implemented")
@@ -240,6 +255,9 @@ func (UnimplementedUserServiceServer) AdminSearchUsers(context.Context, *AdminSe
 }
 func (UnimplementedUserServiceServer) AdminUpdateUserRole(context.Context, *AdminUpdateUserRoleRequest) (*AdminUpdateUserRoleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AdminUpdateUserRole not implemented")
+}
+func (UnimplementedUserServiceServer) AdminSetUserActiveStatus(context.Context, *AdminSetUserActiveStatusRequest) (*AdminSetUserActiveStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AdminSetUserActiveStatus not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 func (UnimplementedUserServiceServer) testEmbeddedByValue()                     {}
@@ -370,24 +388,6 @@ func _UserService_ChangePassword_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UserService_VerifyEmail_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(VerifyEmailRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UserServiceServer).VerifyEmail(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: UserService_VerifyEmail_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServiceServer).VerifyEmail(ctx, req.(*VerifyEmailRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _UserService_DeleteUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteUserRequest)
 	if err := dec(in); err != nil {
@@ -402,6 +402,24 @@ func _UserService_DeleteUser_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UserServiceServer).DeleteUser(ctx, req.(*DeleteUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_DeactivateUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeactivateUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).DeactivateUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_DeactivateUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).DeactivateUser(ctx, req.(*DeactivateUserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -478,6 +496,24 @@ func _UserService_AdminUpdateUserRole_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_AdminSetUserActiveStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminSetUserActiveStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).AdminSetUserActiveStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_AdminSetUserActiveStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).AdminSetUserActiveStatus(ctx, req.(*AdminSetUserActiveStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -510,12 +546,12 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _UserService_ChangePassword_Handler,
 		},
 		{
-			MethodName: "VerifyEmail",
-			Handler:    _UserService_VerifyEmail_Handler,
-		},
-		{
 			MethodName: "DeleteUser",
 			Handler:    _UserService_DeleteUser_Handler,
+		},
+		{
+			MethodName: "DeactivateUser",
+			Handler:    _UserService_DeactivateUser_Handler,
 		},
 		{
 			MethodName: "AdminDeleteUser",
@@ -532,6 +568,10 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AdminUpdateUserRole",
 			Handler:    _UserService_AdminUpdateUserRole_Handler,
+		},
+		{
+			MethodName: "AdminSetUserActiveStatus",
+			Handler:    _UserService_AdminSetUserActiveStatus_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

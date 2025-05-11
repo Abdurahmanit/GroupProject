@@ -4,7 +4,6 @@ go 1.23.4
 
 require (
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/spf13/viper v1.20.1
 	go.mongodb.org/mongo-driver v1.17.3

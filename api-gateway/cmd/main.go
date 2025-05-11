@@ -7,6 +7,7 @@ import (
 	"github.com/Abdurahmanit/GroupProject/api-gateway/internal/config"
 	"github.com/Abdurahmanit/GroupProject/api-gateway/internal/handler"
 	"github.com/Abdurahmanit/GroupProject/api-gateway/internal/middleware"
+	"github.com/Abdurahmanit/GroupProject/api-gateway/internal/router" // Import the router package
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -16,7 +17,7 @@ import (
 func main() {
 	// Initialize logger
 	logger, _ := zap.NewProduction()
-	defer logger.Sync()
+	defer logger.Sync() // nolint:errcheck
 
 	// Load configuration
 	cfg, err := config.LoadConfig()
@@ -25,7 +26,7 @@ func main() {
 	}
 
 	// Connect to User Service via gRPC
-	userConn, err := grpc.NewClient(
+	userConn, err := grpc.NewClient( //nolint:staticcheck // SA1019: grpc.Dial is deprecated
 		fmt.Sprintf("%s:%d", cfg.UserServiceHost, cfg.UserServicePort),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
@@ -36,31 +37,14 @@ func main() {
 
 	// Initialize handlers
 	userHandler := handler.NewUserHandler(userConn, logger)
+	// Add other service handlers here
 
-	// Set up router
+	// Set up main router
 	r := chi.NewRouter()
 	r.Use(middleware.Logger(logger))
 
-	// Public routes
-	r.Post("/api/user/register", userHandler.Register)
-	r.Post("/api/user/login", userHandler.Login)
-
-	// Protected routes (require JWT authentication)
-	r.Group(func(r chi.Router) {
-		r.Use(middleware.JWTAuth(cfg.JWTSecret))
-		r.Post("/api/user/logout", userHandler.Logout)
-		r.Get("/api/user/profile", userHandler.GetProfile)
-		r.Put("/api/user/profile", userHandler.UpdateProfile)
-		r.Post("/api/user/change-password", userHandler.ChangePassword)
-		r.Post("/api/user/verify-email", userHandler.VerifyEmail)
-		r.Delete("/api/user/delete", userHandler.DeleteUser)
-
-		// Admin routes
-		r.Post("/api/admin/user/delete", userHandler.AdminDeleteUser)
-		r.Post("/api/admin/users/list", userHandler.AdminListUsers)
-		r.Post("/api/admin/users/search", userHandler.AdminSearchUsers)
-		r.Post("/api/admin/user/update-role", userHandler.AdminUpdateUserRole)
-	})
+	router.SetupUserRoutes(r, userHandler, cfg.JWTSecret)
+	// Setup other routes
 
 	// Start HTTP server
 	addr := fmt.Sprintf(":%d", cfg.Port)

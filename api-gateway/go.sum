@@ -1,5 +1,5 @@
-github.com/Abdurahmanit/GroupProject/user-service v0.0.0-20250429103547-65b21259a145 h1:XL5EppeeM65O9e3JID7j+pl4tOGCrjVtIXJ/3lnC1Qg=
-github.com/Abdurahmanit/GroupProject/user-service v0.0.0-20250429103547-65b21259a145/go.mod h1:k8kiGq4vLs1sJwC9U3EcFCOmM+8vIh9yw5VqVpYrDqY=
+github.com/Abdurahmanit/GroupProject/user-service v0.0.0-20250511073250-2dbabdc7194e h1:lV8sn4NaRydWJJWb4XTo+86ylbRb8IZimxR/MjrriPg=
+github.com/Abdurahmanit/GroupProject/user-service v0.0.0-20250511073250-2dbabdc7194e/go.mod h1:k8kiGq4vLs1sJwC9U3EcFCOmM+8vIh9yw5VqVpYrDqY=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHkI4W8=

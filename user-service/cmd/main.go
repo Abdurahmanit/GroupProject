@@ -3,14 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	"log" // Using log for fatal errors if logger isn't fully set up
 	"net"
 
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/adapter"
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/config"
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/repository"
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/usecase"
-	user "github.com/Abdurahmanit/GroupProject/user-service/proto"
-	"github.com/go-redis/redis/v8"
+	user "github.com/Abdurahmanit/GroupProject/user-service/proto" // Path to your generated proto package
+	"github.com/go-redis/redis/v8"                                 // Ensure this is v8
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
@@ -19,8 +20,11 @@ import (
 
 func main() {
 	// Initialize logger
-	logger, _ := zap.NewProduction()
-	defer logger.Sync()
+	logger, err := zap.NewProduction()
+	if err != nil {
+		log.Fatalf("can't initialize zap logger: %v", err)
+	}
+	defer logger.Sync() // nolint:errcheck
 
 	// Load configuration
 	cfg, err := config.LoadConfig()
@@ -29,31 +33,42 @@ func main() {
 	}
 
 	// Connect to MongoDB
-	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(cfg.MongoURI))
+	mongoClient, err := mongo.Connect(context.Background(), options.Client().ApplyURI(cfg.MongoURI))
 	if err != nil {
 		logger.Fatal("Failed to connect to MongoDB", zap.Error(err))
 	}
-	defer client.Disconnect(context.Background())
-	db := client.Database("bicycle_shop")
+	// Defer disconnect in a separate goroutine or ensure it's called on shutdown
+	// For simplicity here, direct defer. In production, handle signals for graceful shutdown.
+	defer func() {
+		if err = mongoClient.Disconnect(context.Background()); err != nil {
+			logger.Error("Failed to disconnect MongoDB", zap.Error(err))
+		}
+	}()
+	db := mongoClient.Database("bicycle_shop") // Or from cfg
 
 	// Connect to Redis
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: cfg.RedisAddr,
+		// Password: cfg.RedisPassword, // if you have a password
+		// DB:       cfg.RedisDB,       // if you use a specific DB
 	})
 	_, err = redisClient.Ping(context.Background()).Result()
 	if err != nil {
 		logger.Fatal("Failed to connect to Redis", zap.Error(err))
 	}
+	defer redisClient.Close()
 
 	// Initialize repositories, usecases, and handlers
+	// The NewUserRepository function signature must match the type of redisClient being passed.
+	// It should expect *redis.Client from "github.com/go-redis/redis/v8"
 	userRepo := repository.NewUserRepository(db, redisClient)
-	userUsecase := usecase.NewUserUsecase(userRepo, cfg.JWTSecret)
+	userUsecase := usecase.NewUserUsecase(userRepo, cfg.JWTSecret) // Pass logger if usecase needs it
 	userHandler := adapter.NewUserHandler(userUsecase, logger)
 
 	// Start gRPC server
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
 	if err != nil {
-		logger.Fatal("Failed to listen", zap.Error(err))
+		logger.Fatal("Failed to listen", zap.Error(err), zap.Int("port", cfg.Port))
 	}
 
 	grpcServer := grpc.NewServer()
@@ -61,6 +76,6 @@ func main() {
 
 	logger.Info("Starting User Service", zap.Int("port", cfg.Port))
 	if err := grpcServer.Serve(lis); err != nil {
-		logger.Fatal("Failed to serve", zap.Error(err))
+		logger.Fatal("Failed to serve gRPC", zap.Error(err))
 	}
 }

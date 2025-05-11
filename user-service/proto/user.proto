@@ -11,12 +11,18 @@ service UserService {
   rpc GetProfile (GetProfileRequest) returns (GetProfileResponse);
   rpc UpdateProfile (UpdateProfileRequest) returns (UpdateProfileResponse);
   rpc ChangePassword (ChangePasswordRequest) returns (ChangePasswordResponse);
-  rpc VerifyEmail (VerifyEmailRequest) returns (VerifyEmailResponse);
-  rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
-  rpc AdminDeleteUser (AdminDeleteUserRequest) returns (AdminDeleteUserResponse);
+
+  // Email verification RPCs and related messages have been removed.
+
+  rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse); // User hard-deletes their own account
+  rpc DeactivateUser (DeactivateUserRequest) returns (DeactivateUserResponse); // User soft-deletes (deactivates) their own account
+
+  // Admin methods
+  rpc AdminDeleteUser (AdminDeleteUserRequest) returns (AdminDeleteUserResponse); // Admin hard-deletes a user
   rpc AdminListUsers (AdminListUsersRequest) returns (AdminListUsersResponse);
   rpc AdminSearchUsers (AdminSearchUsersRequest) returns (AdminSearchUsersResponse);
   rpc AdminUpdateUserRole (AdminUpdateUserRoleRequest) returns (AdminUpdateUserRoleResponse);
+  rpc AdminSetUserActiveStatus (AdminSetUserActiveStatusRequest) returns (AdminSetUserActiveStatusResponse); // Admin can activate/deactivate
 }
 
 message RegisterRequest {
@@ -26,7 +32,7 @@ message RegisterRequest {
 }
 
 message RegisterResponse {
-  string user_id = 1;
+  string user_id = 1; // Will be ObjectID().Hex()
 }
 
 message LoginRequest {
@@ -35,11 +41,11 @@ message LoginRequest {
 }
 
 message LoginResponse {
-  string token = 1;
+  string token = 1; // JWT
 }
 
 message LogoutRequest {
-  string user_id = 1;
+  string user_id = 1; // ObjectID().Hex() from JWT
 }
 
 message LogoutResponse {
@@ -47,21 +53,22 @@ message LogoutResponse {
 }
 
 message GetProfileRequest {
-  string user_id = 1;
+  string user_id = 1; // ObjectID().Hex() from JWT
 }
 
 message GetProfileResponse {
-  string username = 1;
-  string email = 2;
-  string role = 3;
-  bool is_email_verified = 4;
-  bool is_active = 5;
-  string created_at = 6;
-  string updated_at = 7;
+  string user_id = 1;         // ObjectID().Hex()
+  string username = 2;
+  string email = 3;
+  string role = 4;
+  // is_email_verified field removed
+  bool is_active = 5;         // Field number adjusted
+  string created_at = 6;      // RFC3339, field number adjusted
+  string updated_at = 7;      // RFC3339, field number adjusted
 }
 
 message UpdateProfileRequest {
-  string user_id = 1;
+  string user_id = 1; // ObjectID().Hex() from JWT
   string username = 2;
   string email = 3;
 }
@@ -71,7 +78,7 @@ message UpdateProfileResponse {
 }
 
 message ChangePasswordRequest {
-  string user_id = 1;
+  string user_id = 1; // ObjectID().Hex() from JWT
   string old_password = 2;
   string new_password = 3;
 }
@@ -80,25 +87,27 @@ message ChangePasswordResponse {
   bool success = 1;
 }
 
-message VerifyEmailRequest {
-  string user_id = 1;
-}
+// Email verification related messages (Initiate, Confirm, Resend) have been removed.
 
-message VerifyEmailResponse {
-  bool success = 1;
-}
-
-message DeleteUserRequest {
-  string user_id = 1;
+message DeleteUserRequest { // User hard-deletes their own account
+  string user_id = 1; // ObjectID().Hex() from JWT
 }
 
 message DeleteUserResponse {
   bool success = 1;
 }
 
+message DeactivateUserRequest { // User soft-deletes (deactivates) their own account
+  string user_id = 1; // ObjectID().Hex() from JWT
+}
+
+message DeactivateUserResponse {
+  bool success = 1;
+}
+
 message AdminDeleteUserRequest {
-  string admin_id = 1;
-  string user_id = 2;
+  string admin_id = 1; // Admin's ObjectID().Hex() from JWT
+  string user_id_to_delete = 2; // Target user's ObjectID().Hex()
 }
 
 message AdminDeleteUserResponse {
@@ -106,7 +115,7 @@ message AdminDeleteUserResponse {
 }
 
 message AdminListUsersRequest {
-  string admin_id = 1;
+  string admin_id = 1; // Admin's ObjectID().Hex() from JWT
   int64 skip = 2;
   int64 limit = 3;
 }
@@ -116,7 +125,7 @@ message AdminListUsersResponse {
 }
 
 message AdminSearchUsersRequest {
-  string admin_id = 1;
+  string admin_id = 1; // Admin's ObjectID().Hex() from JWT
   string query = 2;
   int64 skip = 3;
   int64 limit = 4;
@@ -127,8 +136,8 @@ message AdminSearchUsersResponse {
 }
 
 message AdminUpdateUserRoleRequest {
-  string admin_id = 1;
-  string user_id = 2;
+  string admin_id = 1; // Admin's ObjectID().Hex() from JWT
+  string user_id_to_update = 2; // Target user's ObjectID().Hex()
   string role = 3;
 }
 
@@ -136,13 +145,23 @@ message AdminUpdateUserRoleResponse {
   bool success = 1;
 }
 
-message User {
-  string user_id = 1;
+message AdminSetUserActiveStatusRequest {
+    string admin_id = 1; // Admin's ObjectID().Hex() from JWT
+    string user_id = 2;  // Target user's ObjectID().Hex()
+    bool is_active = 3;
+}
+
+message AdminSetUserActiveStatusResponse {
+    bool success = 1;
+}
+
+message User { // Used in AdminListUsersResponse, AdminSearchUsersResponse
+  string user_id = 1;         // ObjectID().Hex()
   string username = 2;
   string email = 3;
   string role = 4;
-  bool is_email_verified = 5;
-  bool is_active = 6;
-  string created_at = 7;
-  string updated_at = 8;
+  // is_email_verified field removed
+  bool is_active = 5;         // Field number adjusted
+  string created_at = 6;      // RFC3339, field number adjusted
+  string updated_at = 7;      // RFC3339, field number adjusted
 }
