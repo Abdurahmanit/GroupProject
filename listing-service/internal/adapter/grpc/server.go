@@ -4,9 +4,9 @@ import (
 	"log"
 
 	"google.golang.org/grpc"
-	"github.com/your-org/bike-store/listing-service/internal/adapter/grpc/middleware"
-	"github.com/your-org/bike-store/listing-service/internal/platform/logger"
-	"github.com/your-org/bike-store/listing-service/internal/platform/tracer"
+	"github.com/Abdurahmanit/GroupProject/listing-service/internal/adapter/grpc/middleware"
+	"github.com/Abdurahmanit/GroupProject/listing-service/internal/platform/logger"
+	"github.com/Abdurahmanit/GroupProject/listing-service/internal/platform/tracer"
 )
 
 func NewGRPCServer() *grpc.Server {

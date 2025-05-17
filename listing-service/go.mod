@@ -1,4 +1,4 @@
-module github.com/your-org/bike-store/listing-service
+module github.com/Abdurahmanit/GroupProject/listing-service
 
 go 1.22
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/your-org/bike-store/listing-service/internal/listing/domain"
+	"github.com/Abdurahmanit/GroupProject/listing-service/internal/listing/domain"
 )
 
 type ListingUsecase struct {

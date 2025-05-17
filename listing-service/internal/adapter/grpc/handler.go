@@ -4,11 +4,11 @@ import (
 	"context"
 	"log"
 
-	"github.com/your-org/bike-store/listing-service/internal/listing/domain"
-	"github.com/your-org/bike-store/listing-service/internal/listing/usecase"
+	"github.com/Abdurahmanit/GroupProject/listing-service/internal/listing/domain"
+	"github.com/Abdurahmanit/GroupProject/listing-service/internal/listing/usecase"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	pb "github.com/your-org/bike-store/listing-service/genproto/listing_service"
+	pb "github.com/Abdurahmanit/GroupProject/listing-service/genproto/listing_service"
 )
 
 type Handler struct {

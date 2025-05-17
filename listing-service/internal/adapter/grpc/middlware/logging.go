@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
-	"github.com/your-org/bike-store/listing-service/internal/platform/logger"
+	"github.com/Abdurahmanit/GroupProject/listing-service/internal/platform/logger"
 )
 
 func LoggingInterceptor(logger *logger.Logger) grpc.UnaryServerInterceptor {
