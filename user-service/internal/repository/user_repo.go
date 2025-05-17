@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -57,12 +58,13 @@ func fromEntity(e *entity.User) *mongoUser {
 }
 
 type UserRepository struct {
-	db    *mongo.Database
-	redis *redis.Client
+	db     *mongo.Database
+	redis  *redis.Client
+	logger *zap.Logger
 }
 
 // NewUserRepository now correctly typed for redis.Client from v8
-func NewUserRepository(db *mongo.Database, rds *redis.Client) *UserRepository {
+func NewUserRepository(db *mongo.Database, rds *redis.Client, logger *zap.Logger) *UserRepository {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -71,12 +73,15 @@ func NewUserRepository(db *mongo.Database, rds *redis.Client) *UserRepository {
 		Options: options.Index().SetUnique(true),
 	})
 	if err != nil {
-		// Log this error in a real application
+		logger.Error("Failed to create unique index for email", zap.Error(err)) // Added logging
+	} else {
+		logger.Info("Successfully ensured unique index for email")
 	}
 
 	return &UserRepository{
-		db:    db,
-		redis: rds,
+		db:     db,
+		redis:  rds,
+		logger: logger,
 	}
 }
 
@@ -144,13 +149,6 @@ func (r *UserRepository) UpdateUser(ctx context.Context, user *entity.User) erro
 			"is_active":  dbUser.IsActive,
 			"updated_at": dbUser.UpdatedAt,
 		},
-	}
-	if dbUser.Password != "" { // Only update password if it's explicitly set for update
-		// This check is a bit naive; password updates should ideally go through UpdatePassword.
-		// If UpdateUser is meant for general profile updates, password shouldn't be here.
-		// For now, assuming if password is in the entity, it's intended for update (but should be hashed).
-		// This part needs careful consideration based on usecase.
-		// updateDoc["$set"].(bson.M)["password"] = dbUser.Password // Assuming it's already hashed if passed
 	}
 
 	result, err := r.db.Collection("users").UpdateOne(ctx, bson.M{"_id": dbUser.ID}, updateDoc)
@@ -227,7 +225,7 @@ func (r *UserRepository) ListUsers(ctx context.Context, skip, limit int64) ([]*e
 	findOptions.SetLimit(limit)
 	findOptions.SetSort(bson.M{"created_at": -1})
 
-	filter := bson.M{"is_active": true} // Example: only list active users
+	filter := bson.M{"is_active": true}
 
 	cursor, err := r.db.Collection("users").Find(ctx, filter, findOptions)
 	if err != nil {
@@ -255,7 +253,6 @@ func (r *UserRepository) SearchUsers(ctx context.Context, query string, skip, li
 	findOptions.SetSort(bson.M{"created_at": -1})
 
 	filter := bson.M{
-		// "is_active": true, // Optionally filter by active status
 		"$or": []bson.M{
 			{"username": bson.M{"$regex": query, "$options": "i"}},
 			{"email": bson.M{"$regex": query, "$options": "i"}},

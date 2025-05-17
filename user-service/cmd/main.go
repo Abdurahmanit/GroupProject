@@ -37,14 +37,13 @@ func main() {
 	if err != nil {
 		logger.Fatal("Failed to connect to MongoDB", zap.Error(err))
 	}
-	// Defer disconnect in a separate goroutine or ensure it's called on shutdown
-	// For simplicity here, direct defer. In production, handle signals for graceful shutdown.
+	// handle signals for graceful shutdown replacing direct defer.
 	defer func() {
 		if err = mongoClient.Disconnect(context.Background()); err != nil {
 			logger.Error("Failed to disconnect MongoDB", zap.Error(err))
 		}
 	}()
-	db := mongoClient.Database("bicycle_shop") // Or from cfg
+	db := mongoClient.Database("bicycle_shop")
 
 	// Connect to Redis
 	redisClient := redis.NewClient(&redis.Options{
@@ -56,8 +55,8 @@ func main() {
 	}
 	defer redisClient.Close()
 
-	userRepo := repository.NewUserRepository(db, redisClient)
-	userUsecase := usecase.NewUserUsecase(userRepo, cfg.JWTSecret)
+	userRepo := repository.NewUserRepository(db, redisClient, logger)
+	userUsecase := usecase.NewUserUsecase(userRepo, cfg.JWTSecret, logger)
 	userHandler := adapter.NewUserHandler(userUsecase, logger)
 
 	// Start gRPC server
