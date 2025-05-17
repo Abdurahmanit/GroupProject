@@ -17,7 +17,7 @@ import (
 func main() {
 	// Initialize logger
 	logger, _ := zap.NewProduction()
-	defer logger.Sync() // nolint:errcheck
+	defer logger.Sync()
 
 	// Load configuration
 	cfg, err := config.LoadConfig()
@@ -26,7 +26,7 @@ func main() {
 	}
 
 	// Connect to User Service via gRPC
-	userConn, err := grpc.NewClient( //nolint:staticcheck // SA1019: grpc.Dial is deprecated
+	userConn, err := grpc.NewClient(
 		fmt.Sprintf("%s:%d", cfg.UserServiceHost, cfg.UserServicePort),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)

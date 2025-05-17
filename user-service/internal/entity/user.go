@@ -6,14 +6,13 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// User entity without email verification fields.
 type User struct {
-	ID        primitive.ObjectID // ObjectID, no bson tag here
+	ID        primitive.ObjectID
 	Username  string
 	Email     string
-	Password  string // This will be the hashed password
+	Password  string
 	Role      string // "admin", "customer"
-	IsActive  bool   // For soft deletion
+	IsActive  bool
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

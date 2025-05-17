@@ -3,15 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
-	"log" // Using log for fatal errors if logger isn't fully set up
+	"log"
 	"net"
 
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/adapter"
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/config"
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/repository"
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/usecase"
-	user "github.com/Abdurahmanit/GroupProject/user-service/proto" // Path to your generated proto package
-	"github.com/go-redis/redis/v8"                                 // Ensure this is v8
+	user "github.com/Abdurahmanit/GroupProject/user-service/proto"
+	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
@@ -24,7 +24,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("can't initialize zap logger: %v", err)
 	}
-	defer logger.Sync() // nolint:errcheck
+	defer logger.Sync()
 
 	// Load configuration
 	cfg, err := config.LoadConfig()
@@ -49,8 +49,6 @@ func main() {
 	// Connect to Redis
 	redisClient := redis.NewClient(&redis.Options{
 		Addr: cfg.RedisAddr,
-		// Password: cfg.RedisPassword, // if you have a password
-		// DB:       cfg.RedisDB,       // if you use a specific DB
 	})
 	_, err = redisClient.Ping(context.Background()).Result()
 	if err != nil {
@@ -58,11 +56,8 @@ func main() {
 	}
 	defer redisClient.Close()
 
-	// Initialize repositories, usecases, and handlers
-	// The NewUserRepository function signature must match the type of redisClient being passed.
-	// It should expect *redis.Client from "github.com/go-redis/redis/v8"
 	userRepo := repository.NewUserRepository(db, redisClient)
-	userUsecase := usecase.NewUserUsecase(userRepo, cfg.JWTSecret) // Pass logger if usecase needs it
+	userUsecase := usecase.NewUserUsecase(userRepo, cfg.JWTSecret)
 	userHandler := adapter.NewUserHandler(userUsecase, logger)
 
 	// Start gRPC server

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	user "github.com/Abdurahmanit/GroupProject/user-service/proto" // Path to your generated proto package
+	user "github.com/Abdurahmanit/GroupProject/user-service/proto"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -42,7 +42,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(resp) // nolint:errcheck
+	json.NewEncoder(w).Encode(resp)
 }
 
 // Login handles user login requests.
@@ -61,7 +61,7 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp) // nolint:errcheck
+	json.NewEncoder(w).Encode(resp)
 }
 
 // Logout handles user logout requests.
@@ -81,7 +81,7 @@ func (h *UserHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp) // nolint:errcheck
+	json.NewEncoder(w).Encode(resp)
 }
 
 // GetProfile handles requests to get user profile.
@@ -101,7 +101,7 @@ func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp) // nolint:errcheck
+	json.NewEncoder(w).Encode(resp)
 }
 
 // UpdateProfile handles requests to update user profile.
@@ -127,7 +127,7 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp) // nolint:errcheck
+	json.NewEncoder(w).Encode(resp)
 }
 
 // ChangePassword handles requests to change user password.
@@ -153,7 +153,7 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp) // nolint:errcheck
+	json.NewEncoder(w).Encode(resp)
 }
 
 // DeleteUser handles requests for a user to (hard) delete their own account.
@@ -173,7 +173,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp) // nolint:errcheck
+	json.NewEncoder(w).Encode(resp)
 }
 
 // DeactivateUser handles requests for a user to deactivate (soft delete) their own account.
@@ -193,7 +193,7 @@ func (h *UserHandler) DeactivateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp) // nolint:errcheck
+	json.NewEncoder(w).Encode(resp)
 }
 
 // --- Admin Handlers ---
@@ -226,7 +226,7 @@ func (h *UserHandler) AdminDeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp) // nolint:errcheck
+	json.NewEncoder(w).Encode(resp)
 }
 
 // AdminListUsers handles admin requests to list users.
@@ -237,8 +237,7 @@ func (h *UserHandler) AdminListUsers(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Admin ID not found in token", http.StatusUnauthorized)
 		return
 	}
-	var reqBody user.AdminListUsersRequest // Skip, Limit from body (optional)
-	// Try to decode, but don't fail if body is empty (defaults will be used by gRPC service)
+	var reqBody user.AdminListUsersRequest // Skip, Limit from body
 	_ = json.NewDecoder(r.Body).Decode(&reqBody)
 	reqBody.AdminId = adminID
 
@@ -250,7 +249,7 @@ func (h *UserHandler) AdminListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp) // nolint:errcheck
+	json.NewEncoder(w).Encode(resp)
 }
 
 // AdminSearchUsers handles admin requests to search users.
@@ -277,7 +276,7 @@ func (h *UserHandler) AdminSearchUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp) // nolint:errcheck
+	json.NewEncoder(w).Encode(resp)
 }
 
 // AdminUpdateUserRole handles admin requests to update a user's role.
@@ -313,7 +312,7 @@ func (h *UserHandler) AdminUpdateUserRole(w http.ResponseWriter, r *http.Request
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp) // nolint:errcheck
+	json.NewEncoder(w).Encode(resp)
 }
 
 // AdminSetUserActiveStatus handles admin requests to activate or deactivate a user.
@@ -349,7 +348,7 @@ func (h *UserHandler) AdminSetUserActiveStatus(w http.ResponseWriter, r *http.Re
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp) // nolint:errcheck
+	json.NewEncoder(w).Encode(resp)
 }
 
 // GRPCCodeToHTTPStatus maps gRPC status codes to HTTP status codes for consistent error handling.
@@ -358,7 +357,7 @@ func GRPCCodeToHTTPStatus(code codes.Code) int {
 	case codes.OK:
 		return http.StatusOK
 	case codes.Canceled:
-		return 499 // Client Closed Request (common practice for Canceled)
+		return 499
 	case codes.Unknown:
 		return http.StatusInternalServerError
 	case codes.InvalidArgument:
@@ -374,10 +373,9 @@ func GRPCCodeToHTTPStatus(code codes.Code) int {
 	case codes.ResourceExhausted:
 		return http.StatusTooManyRequests
 	case codes.FailedPrecondition:
-		// For example, trying to operate on an inactive user when it's not allowed.
-		return http.StatusPreconditionFailed // HTTP 412
+		return http.StatusPreconditionFailed
 	case codes.Aborted:
-		return http.StatusConflict // Typically indicates a concurrency issue
+		return http.StatusConflict
 	case codes.OutOfRange:
 		return http.StatusBadRequest
 	case codes.Unimplemented:

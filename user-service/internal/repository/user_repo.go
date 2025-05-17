@@ -1,4 +1,3 @@
-// File: user-service/internal/repository/user_repo.go
 package repository
 
 import (
@@ -7,7 +6,7 @@ import (
 	"time"
 
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/entity"
-	"github.com/go-redis/redis/v8" // <<<< ENSURE THIS IS THE V8 IMPORT
+	"github.com/go-redis/redis/v8"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -59,7 +58,7 @@ func fromEntity(e *entity.User) *mongoUser {
 
 type UserRepository struct {
 	db    *mongo.Database
-	redis *redis.Client // <<<< This will now correctly refer to the v8.Client due to the import
+	redis *redis.Client
 }
 
 // NewUserRepository now correctly typed for redis.Client from v8
@@ -90,7 +89,7 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *entity.User) (pri
 
 	dbUser := fromEntity(user)
 	dbUser.Password = string(hashedPassword)
-	if dbUser.ID.IsZero() { // Ensure ID is generated if not already set (e.g. by usecase)
+	if dbUser.ID.IsZero() {
 		dbUser.ID = primitive.NewObjectID()
 	}
 	dbUser.CreatedAt = time.Now()
@@ -283,19 +282,16 @@ func (r *UserRepository) SearchUsers(ctx context.Context, query string, skip, li
 // CacheToken stores a token in Redis.
 // The keySuffix is typically the userID for JWTs.
 func (r *UserRepository) CacheToken(ctx context.Context, keySuffix, token string, expiration time.Duration) error {
-	// Correct v8 signature: Set(ctx context.Context, key string, value interface{}, expiration time.Duration) *StatusCmd
 	return r.redis.Set(ctx, "token:"+keySuffix, token, expiration).Err()
 }
 
 // InvalidateToken removes a token from Redis.
 func (r *UserRepository) InvalidateToken(ctx context.Context, keySuffix string) error {
-	// Correct v8 signature: Del(ctx context.Context, keys ...string) *IntCmd
 	return r.redis.Del(ctx, "token:"+keySuffix).Err()
 }
 
 // GetToken retrieves a token from Redis.
 func (r *UserRepository) GetToken(ctx context.Context, keySuffix string) (string, error) {
-	// Correct v8 signature: Get(ctx context.Context, key string) *StringCmd
 	token, err := r.redis.Get(ctx, "token:"+keySuffix).Result()
 	if errors.Is(err, redis.Nil) {
 		return "", nil // Token not found is not an application error here

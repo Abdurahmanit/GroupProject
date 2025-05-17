@@ -1,4 +1,3 @@
-// File: user-service/internal/adapter/handler.go
 package adapter
 
 import (
@@ -6,9 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Abdurahmanit/GroupProject/user-service/internal/repository" // For error types like repository.ErrUserNotFound
+	"github.com/Abdurahmanit/GroupProject/user-service/internal/repository"
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/usecase"
-	user "github.com/Abdurahmanit/GroupProject/user-service/proto" // Path to your generated proto package
+	user "github.com/Abdurahmanit/GroupProject/user-service/proto"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -87,7 +86,6 @@ func (h *UserHandler) GetProfile(ctx context.Context, req *user.GetProfileReques
 		}
 		return nil, status.Error(codes.Internal, "Failed to get profile")
 	}
-	// Ensure is_email_verified is not accessed as it's removed from proto
 	return &user.GetProfileResponse{
 		UserId:    profile.ID.Hex(),
 		Username:  profile.Username,
@@ -104,7 +102,6 @@ func (h *UserHandler) UpdateProfile(ctx context.Context, req *user.UpdateProfile
 	if req.GetUserId() == "" {
 		return nil, status.Error(codes.InvalidArgument, "User ID is required")
 	}
-	// Add more validation for username and email if needed
 	err := h.usecase.UpdateProfile(ctx, req.UserId, req.Username, req.Email)
 	if err != nil {
 		h.logger.Error("Failed to update profile", zap.String("userID", req.UserId), zap.Error(err))
@@ -149,7 +146,7 @@ func (h *UserHandler) DeleteUser(ctx context.Context, req *user.DeleteUserReques
 	if req.GetUserId() == "" {
 		return nil, status.Error(codes.InvalidArgument, "User ID is required")
 	}
-	err := h.usecase.DeleteUser(ctx, req.UserId) // This is now hard delete
+	err := h.usecase.DeleteUser(ctx, req.UserId)
 	if err != nil {
 		h.logger.Error("Failed to delete user (hard)", zap.String("userID", req.UserId), zap.Error(err))
 		if errors.Is(err, repository.ErrUserNotFound) {
@@ -213,7 +210,7 @@ func (h *UserHandler) AdminListUsers(ctx context.Context, req *user.AdminListUse
 
 	protoUsers := make([]*user.User, len(usersList))
 	for i, u := range usersList {
-		protoUsers[i] = &user.User{ // Ensure this mapping matches the proto User message
+		protoUsers[i] = &user.User{
 			UserId:    u.ID.Hex(),
 			Username:  u.Username,
 			Email:     u.Email,
@@ -241,7 +238,7 @@ func (h *UserHandler) AdminSearchUsers(ctx context.Context, req *user.AdminSearc
 	}
 	protoUsers := make([]*user.User, len(usersList))
 	for i, u := range usersList {
-		protoUsers[i] = &user.User{ // Ensure this mapping matches the proto User message
+		protoUsers[i] = &user.User{
 			UserId:    u.ID.Hex(),
 			Username:  u.Username,
 			Email:     u.Email,
@@ -274,13 +271,11 @@ func (h *UserHandler) AdminUpdateUserRole(ctx context.Context, req *user.AdminUp
 }
 
 // AdminSetUserActiveStatus allows an admin to activate or deactivate a user.
-// This method now correctly calls the public method on the usecase.
 func (h *UserHandler) AdminSetUserActiveStatus(ctx context.Context, req *user.AdminSetUserActiveStatusRequest) (*user.AdminSetUserActiveStatusResponse, error) {
 	if req.GetAdminId() == "" || req.GetUserId() == "" {
 		return nil, status.Error(codes.InvalidArgument, "Admin ID and User ID are required")
 	}
 
-	// Call the public method on the usecase instance
 	err := h.usecase.AdminSetUserActiveStatus(ctx, req.AdminId, req.UserId, req.IsActive)
 	if err != nil {
 		h.logger.Error("Failed to set user active status by admin via usecase",
@@ -295,7 +290,6 @@ func (h *UserHandler) AdminSetUserActiveStatus(ctx context.Context, req *user.Ad
 		if errors.Is(err, repository.ErrUserNotFound) { // Check for specific error from repository if bubbled up
 			return nil, status.Error(codes.NotFound, "Target user not found")
 		}
-		// Handle other specific errors from usecase if necessary, or a general internal error
 		return nil, status.Error(codes.Internal, "Failed to update user active status")
 	}
 

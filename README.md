@@ -1,18 +1,17 @@
 
 # Overview
 
-This project is a microservices-based system for a bicycle shop, designed to manage an online store's operations. It includes services for handling user accounts, product listings, reviews, orders, news, and admin tasks. The backend is built with Go, following clean architecture principles, and uses MongoDB for data storage, Redis for caching, and NATS for message queues. Inter-service communication is handled via gRPC, while the API Gateway exposes REST endpoints over HTTP for external clients like the React frontend. Grafana is integrated for monitoring.
+This project is a microservices-based system for a bicycle shop, designed to manage an online store's operations. It includes services for handling user accounts, product listings, reviews, orders and news. The backend is built with Go, following clean architecture principles, and uses MongoDB for data storage, Redis for caching, and NATS for message queues. Inter-service communication is handled via gRPC, while the API Gateway exposes REST endpoints over HTTP for external clients like the React frontend. Grafana is integrated for monitoring.
 
 ## Architecture
 
-The system consists of an API Gateway and six microservices:
+The system consists of an API Gateway and five microservices:
 
 - **User Service**: Manages user registration, login, logout, profile management, JWT authentication, and access control (user/admin roles).
 - **Review Service**: Handles adding reviews for sellers and products, rating systems, and moderation features (report, hide, delete).
-- **Listing Service**: Manages creation, updating, and deletion of bicycle listings, including search, filtering, photo uploads, and favorites/bookmarks.
+- **Listing Service**: Manages creation, updating, and deletion of bicycle listings, including search, filtering, photo uploads, and favorites/bookmarks, admin controls.
 - **Order Service**: Manages shopping cart operations, order placement, payment integration, order statuses, history, and PDF receipt generation.
-- **News Service**: Handles publishing news articles, comments, and likes.
-- **Admin Service**: Provides administrative functions like managing users, listings, reviews, news, and access rights.
+- **News Service**: Handles publishing news articles, comments, likes and admin controls.
 
 The API Gateway acts as the entry point for external clients, accepting REST requests over HTTP from the frontend and translating them into gRPC calls to the appropriate microservices. The microservices communicate with each other exclusively via gRPC, ensuring efficient and type-safe interactions. Each microservice follows clean architecture with layers for entities (domain models), usecases (business logic), adapters (gRPC handlers), and repositories (data access).
 
@@ -26,11 +25,9 @@ GroupProject/
 ├── listing-service/  # Product listing management service
 ├── order-service/    # Order and payment processing service
 ├── news-service/     # News publishing and interaction service
-├── admin-service/    # Admin management service
 ├── frontend/         # React frontend for user interaction
 ├── scripts/          # Helper scripts for setup and running
 ├── monitoring/       # Grafana setup for monitoring
-├── go.mod            # Go module file
 └── README.md         # Project documentation
 ```
 
@@ -73,7 +70,6 @@ Each microservice has its own `proto/` directory containing its gRPC definitions
 - **Orders**: Add items to cart, place orders, process payments, track statuses, and generate PDF receipts.
 - **News**: Publish articles, allow comments, and track likes.
 - **Admin Controls**: Manage users, listings, reviews, news, and access rights.
-- **Email Notifications**: Send order confirmations via Google SMTP.
 - **Monitoring**: Use Grafana for tracing, metrics, and logs.
 
 ## Ports
@@ -87,7 +83,6 @@ The frontend, API Gateway, and microservices each run on specific ports:
 - Listing Service: `50053` (gRPC)
 - Order Service: `50054` (gRPC)
 - News Service: `50055` (gRPC)
-- Admin Service: `50056` (gRPC)
 
 Ports for microservices are configurable in each service’s `internal/config/config.go`.
 
@@ -100,10 +95,6 @@ Example endpoints include:
 - `/api/user/register` (User Service)
 - `/api/listings` (Listing Service)
 - `/api/orders` (Order Service)
-
-## Email Notifications
-
-The Order Service sends email notifications (e.g., order confirmations) using Google SMTP. Configure your Google account credentials in `order-service/internal/config/config.go`.
 
 ## Monitoring
 
