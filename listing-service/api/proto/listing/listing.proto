@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+package listing;
+
+service ListingService {
+    rpc CreateListing (CreateListingRequest) returns (ListingResponse);
+    rpc UpdateListing (UpdateListingRequest) returns (ListingResponse);
+    rpc DeleteListing (DeleteListingRequest) returns (Empty);
+    rpc GetListingByID (GetListingRequest) returns (ListingResponse);
+    rpc SearchListings (SearchListingsRequest) returns (SearchListingsResponse);
+    rpc UploadPhoto (UploadPhotoRequest) returns (UploadPhotoResponse);
+    rpc GetListingStatus (GetListingRequest) returns (ListingStatusResponse);
+    rpc AddFavorite (AddFavoriteRequest) returns (Empty);
+    rpc RemoveFavorite (RemoveFavoriteRequest) returns (Empty);
+    rpc GetFavorites (GetFavoritesRequest) returns (GetFavoritesResponse);
+    rpc GetPhotoURLs (GetListingRequest) returns (PhotoURLsResponse);
+    rpc UpdateListingStatus (UpdateListingStatusRequest) returns (ListingResponse);
+}
+
+message Empty {}
+
+message CreateListingRequest {
+    string title = 1;
+    string description = 2;
+    double price = 3;
+}
+
+message UpdateListingRequest {
+    string id = 1;
+    string title = 2;
+    string description = 3;
+    double price = 4;
+    string status = 5;
+}
+
+message DeleteListingRequest {
+    string id = 1;
+}
+
+message GetListingRequest {
+    string id = 1;
+}
+
+message ListingResponse {
+    string id = 1;
+    string title = 2;
+    string description = 3;
+    double price = 4;
+    string status = 5;
+    repeated string photos = 6;
+    string created_at = 7;
+    string updated_at = 8;
+}
+
+message SearchListingsRequest {
+    string query = 1;
+    double min_price = 2;
+    double max_price = 3;
+    string status = 4;
+}
+
+message SearchListingsResponse {
+    repeated ListingResponse listings = 1;
+}
+
+message UploadPhotoRequest {
+    string listing_id = 1;
+    string file_name = 2;
+    bytes data = 3;
+}
+
+message UploadPhotoResponse {
+    string url = 1;
+}
+
+message ListingStatusResponse {
+    string status = 1;
+}
+
+message AddFavoriteRequest {
+    string user_id = 1;
+    string listing_id = 2;
+}
+
+message RemoveFavoriteRequest {
+    string user_id = 1;
+    string listing_id = 2;
+}
+
+message GetFavoritesRequest {
+    string user_id = 1;
+}
+
+message GetFavoritesResponse {
+    repeated string listing_ids = 1;
+}
+
+message PhotoURLsResponse {
+    repeated string urls = 1;
+}
+
+message UpdateListingStatusRequest {
+    string id = 1;
+    string status = 2;
+}
