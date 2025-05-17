@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Abdurahmanit/GroupProject/internal/listing/domain"
+	"github.com/Abdurahmanit/GroupProject/listing-service/internal/listing/domain"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"

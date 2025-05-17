@@ -1,6 +1,7 @@
 package grpc
 
 import (
+	"context"
 	"log"
 
 	"google.golang.org/grpc"
@@ -9,7 +10,7 @@ import (
 	"github.com/Abdurahmanit/GroupProject/listing-service/internal/platform/tracer"
 )
 
-func NewGRPCServer() *grpc.Server {
+func NewGRPCServer() (*grpc.Server, func()) {
 	// Initialize logger and tracer
 	logger := logger.NewLogger()
 	tracerProvider := tracer.InitTracer()
@@ -19,12 +20,14 @@ func NewGRPCServer() *grpc.Server {
 		grpc.UnaryInterceptor(middleware.LoggingInterceptor(logger)),
 	)
 
-	// Ensure tracer shutdown on server stop
-	go func() {
-		<-server.GetServiceInfo()
-		tracerProvider.Shutdown()
-	}()
+	// Return server and cleanup function
+	cleanup := func() {
+		// Shutdown tracer provider with context
+		if err := tracerProvider.Shutdown(context.Background()); err != nil {
+			log.Printf("Failed to shutdown tracer: %v", err)
+		}
+	}
 
 	log.Println("gRPC server initialized with logging middleware")
-	return server
+	return server, cleanup
 }

@@ -2,8 +2,8 @@ package grpc
 
 import (
 	"context"
-	"log"
 
+	"github.com/Abdurahmanit/GroupProject/listing-service/internal/adapter/messaging/nats" // Правильный импорт пакета nats
 	"github.com/Abdurahmanit/GroupProject/listing-service/internal/listing/domain"
 	"github.com/Abdurahmanit/GroupProject/listing-service/internal/listing/usecase"
 	"google.golang.org/grpc/codes"
@@ -16,7 +16,7 @@ type Handler struct {
 	listingUsecase  *usecase.ListingUsecase
 	photoUsecase    *usecase.PhotoUsecase
 	favoriteUsecase *usecase.FavoriteUsecase
-	natsPublisher   *nats.Publisher
+	natsPublisher   *nats.Publisher // Теперь это должно работать
 }
 
 func NewHandler(listingRepo domain.ListingRepository, favoriteRepo domain.FavoriteRepository, storage usecase.Storage, natsPublisher *nats.Publisher) *Handler {

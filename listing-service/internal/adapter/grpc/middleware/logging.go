@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"google.golang.org/grpc"

@@ -4,14 +4,16 @@ import (
 	"context"
 	"log"
 	"net"
-	"github.com/Abdurahmanit/GroupProject/listing-service/internal/adapter/grpc"
-	"github.com/Abdurahmanit/GroupProject/listing-service/internal/adapter/repository/mongodb"
+
+	grpcAdapter "github.com/Abdurahmanit/GroupProject/listing-service/internal/adapter/grpc"
 	"github.com/Abdurahmanit/GroupProject/listing-service/internal/adapter/messaging/nats"
+	"github.com/Abdurahmanit/GroupProject/listing-service/internal/adapter/repository/mongodb"
 	"github.com/Abdurahmanit/GroupProject/listing-service/internal/adapter/storage/s3"
 	"github.com/Abdurahmanit/GroupProject/listing-service/internal/config"
+	pb "github.com/Abdurahmanit/GroupProject/listing-service/genproto/listing_service"
+
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"google.golang.org/grpc"
 )
 
 func main() {
@@ -27,7 +29,7 @@ func main() {
 		log.Fatalf("Failed to connect to MongoDB: %v", err)
 	}
 	defer mongoClient.Disconnect(context.Background())
-	db := mongoClient.Database(cfg.MongoDB)
+	db := mongoClient.Database("bike_store")
 
 	// Initialize repositories
 	listingRepo := mongodb.NewListingRepository(db)
@@ -44,6 +46,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize NATS: %v", err)
 	}
+	defer natsPublisher.Close()
 
 	// Set up gRPC server
 	lis, err := net.Listen("tcp", ":"+cfg.GRPCPort)
@@ -51,9 +54,11 @@ func main() {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 
-	grpcServer := grpc.NewServer()
-	handler := grpc.NewHandler(listingRepo, favoriteRepo, storageClient, natsPublisher)
-	grpc.RegisterListingServiceServer(grpcServer, handler)
+	grpcServer, cleanup := grpcAdapter.NewGRPCServer()
+	defer cleanup()
+
+	handler := grpcAdapter.NewHandler(listingRepo, favoriteRepo, storageClient, natsPublisher)
+	pb.RegisterListingServiceServer(grpcServer, handler)
 
 	log.Printf("Starting gRPC server on port %s", cfg.GRPCPort)
 	if err := grpcServer.Serve(lis); err != nil {
