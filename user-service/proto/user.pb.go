@@ -26,6 +26,7 @@ type RegisterRequest struct {
 	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
 	Email         string                 `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
 	Password      string                 `protobuf:"bytes,3,opt,name=password,proto3" json:"password,omitempty"`
+	PhoneNumber   string                 `protobuf:"bytes,4,opt,name=phone_number,json=phoneNumber,proto3" json:"phone_number,omitempty"` // New field
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -81,9 +82,16 @@ func (x *RegisterRequest) GetPassword() string {
 	return ""
 }
 
+func (x *RegisterRequest) GetPhoneNumber() string {
+	if x != nil {
+		return x.PhoneNumber
+	}
+	return ""
+}
+
 type RegisterResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // Will be ObjectID().Hex()
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -179,7 +187,7 @@ func (x *LoginRequest) GetPassword() string {
 
 type LoginResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"` // JWT
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -223,7 +231,7 @@ func (x *LoginResponse) GetToken() string {
 
 type LogoutRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // ObjectID().Hex() from JWT
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -311,7 +319,7 @@ func (x *LogoutResponse) GetSuccess() bool {
 
 type GetProfileRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // ObjectID().Hex() from JWT
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -354,15 +362,15 @@ func (x *GetProfileRequest) GetUserId() string {
 }
 
 type GetProfileResponse struct {
-	state    protoimpl.MessageState `protogen:"open.v1"`
-	UserId   string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // ObjectID().Hex()
-	Username string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
-	Email    string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
-	Role     string                 `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`
-	// is_email_verified field removed
-	IsActive      bool   `protobuf:"varint,5,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`   // Field number adjusted
-	CreatedAt     string `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"` // RFC3339, field number adjusted
-	UpdatedAt     string `protobuf:"bytes,7,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"` // RFC3339, field number adjusted
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	Email         string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
+	PhoneNumber   string                 `protobuf:"bytes,4,opt,name=phone_number,json=phoneNumber,proto3" json:"phone_number,omitempty"` // New field
+	Role          string                 `protobuf:"bytes,5,opt,name=role,proto3" json:"role,omitempty"`                                  // Field number adjusted
+	IsActive      bool                   `protobuf:"varint,6,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`         // Field number adjusted
+	CreatedAt     string                 `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`       // Field number adjusted (RFC3339)
+	UpdatedAt     string                 `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`       // Field number adjusted (RFC3339)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -418,6 +426,13 @@ func (x *GetProfileResponse) GetEmail() string {
 	return ""
 }
 
+func (x *GetProfileResponse) GetPhoneNumber() string {
+	if x != nil {
+		return x.PhoneNumber
+	}
+	return ""
+}
+
 func (x *GetProfileResponse) GetRole() string {
 	if x != nil {
 		return x.Role
@@ -448,9 +463,10 @@ func (x *GetProfileResponse) GetUpdatedAt() string {
 
 type UpdateProfileRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // ObjectID().Hex() from JWT
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
 	Email         string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
+	PhoneNumber   string                 `protobuf:"bytes,4,opt,name=phone_number,json=phoneNumber,proto3" json:"phone_number,omitempty"` // New field (optional for update, client can send empty if not changing)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -506,6 +522,13 @@ func (x *UpdateProfileRequest) GetEmail() string {
 	return ""
 }
 
+func (x *UpdateProfileRequest) GetPhoneNumber() string {
+	if x != nil {
+		return x.PhoneNumber
+	}
+	return ""
+}
+
 type UpdateProfileResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
@@ -552,7 +575,7 @@ func (x *UpdateProfileResponse) GetSuccess() bool {
 
 type ChangePasswordRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // ObjectID().Hex() from JWT
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	OldPassword   string                 `protobuf:"bytes,2,opt,name=old_password,json=oldPassword,proto3" json:"old_password,omitempty"`
 	NewPassword   string                 `protobuf:"bytes,3,opt,name=new_password,json=newPassword,proto3" json:"new_password,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -656,7 +679,7 @@ func (x *ChangePasswordResponse) GetSuccess() bool {
 
 type DeleteUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // ObjectID().Hex() from JWT
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -744,7 +767,7 @@ func (x *DeleteUserResponse) GetSuccess() bool {
 
 type DeactivateUserRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // ObjectID().Hex() from JWT
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -830,10 +853,11 @@ func (x *DeactivateUserResponse) GetSuccess() bool {
 	return false
 }
 
+// Admin Messages
 type AdminDeleteUserRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	AdminId        string                 `protobuf:"bytes,1,opt,name=admin_id,json=adminId,proto3" json:"admin_id,omitempty"`                          // Admin's ObjectID().Hex() from JWT
-	UserIdToDelete string                 `protobuf:"bytes,2,opt,name=user_id_to_delete,json=userIdToDelete,proto3" json:"user_id_to_delete,omitempty"` // Target user's ObjectID().Hex()
+	AdminId        string                 `protobuf:"bytes,1,opt,name=admin_id,json=adminId,proto3" json:"admin_id,omitempty"`
+	UserIdToDelete string                 `protobuf:"bytes,2,opt,name=user_id_to_delete,json=userIdToDelete,proto3" json:"user_id_to_delete,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -928,7 +952,7 @@ func (x *AdminDeleteUserResponse) GetSuccess() bool {
 
 type AdminListUsersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	AdminId       string                 `protobuf:"bytes,1,opt,name=admin_id,json=adminId,proto3" json:"admin_id,omitempty"` // Admin's ObjectID().Hex() from JWT
+	AdminId       string                 `protobuf:"bytes,1,opt,name=admin_id,json=adminId,proto3" json:"admin_id,omitempty"`
 	Skip          int64                  `protobuf:"varint,2,opt,name=skip,proto3" json:"skip,omitempty"`
 	Limit         int64                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -1032,7 +1056,7 @@ func (x *AdminListUsersResponse) GetUsers() []*User {
 
 type AdminSearchUsersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	AdminId       string                 `protobuf:"bytes,1,opt,name=admin_id,json=adminId,proto3" json:"admin_id,omitempty"` // Admin's ObjectID().Hex() from JWT
+	AdminId       string                 `protobuf:"bytes,1,opt,name=admin_id,json=adminId,proto3" json:"admin_id,omitempty"`
 	Query         string                 `protobuf:"bytes,2,opt,name=query,proto3" json:"query,omitempty"`
 	Skip          int64                  `protobuf:"varint,3,opt,name=skip,proto3" json:"skip,omitempty"`
 	Limit         int64                  `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
@@ -1144,8 +1168,8 @@ func (x *AdminSearchUsersResponse) GetUsers() []*User {
 
 type AdminUpdateUserRoleRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	AdminId        string                 `protobuf:"bytes,1,opt,name=admin_id,json=adminId,proto3" json:"admin_id,omitempty"`                          // Admin's ObjectID().Hex() from JWT
-	UserIdToUpdate string                 `protobuf:"bytes,2,opt,name=user_id_to_update,json=userIdToUpdate,proto3" json:"user_id_to_update,omitempty"` // Target user's ObjectID().Hex()
+	AdminId        string                 `protobuf:"bytes,1,opt,name=admin_id,json=adminId,proto3" json:"admin_id,omitempty"`
+	UserIdToUpdate string                 `protobuf:"bytes,2,opt,name=user_id_to_update,json=userIdToUpdate,proto3" json:"user_id_to_update,omitempty"`
 	Role           string                 `protobuf:"bytes,3,opt,name=role,proto3" json:"role,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
@@ -1248,8 +1272,8 @@ func (x *AdminUpdateUserRoleResponse) GetSuccess() bool {
 
 type AdminSetUserActiveStatusRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	AdminId       string                 `protobuf:"bytes,1,opt,name=admin_id,json=adminId,proto3" json:"admin_id,omitempty"` // Admin's ObjectID().Hex() from JWT
-	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`    // Target user's ObjectID().Hex()
+	AdminId       string                 `protobuf:"bytes,1,opt,name=admin_id,json=adminId,proto3" json:"admin_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	IsActive      bool                   `protobuf:"varint,3,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1350,16 +1374,17 @@ func (x *AdminSetUserActiveStatusResponse) GetSuccess() bool {
 	return false
 }
 
+// User message used in Admin responses and potentially other services
 type User struct {
-	state    protoimpl.MessageState `protogen:"open.v1"`
-	UserId   string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // ObjectID().Hex()
-	Username string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
-	Email    string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
-	Role     string                 `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`
-	// is_email_verified field removed
-	IsActive      bool   `protobuf:"varint,5,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`   // Field number adjusted
-	CreatedAt     string `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"` // RFC3339, field number adjusted
-	UpdatedAt     string `protobuf:"bytes,7,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"` // RFC3339, field number adjusted
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
+	Email         string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
+	PhoneNumber   string                 `protobuf:"bytes,4,opt,name=phone_number,json=phoneNumber,proto3" json:"phone_number,omitempty"` // New field
+	Role          string                 `protobuf:"bytes,5,opt,name=role,proto3" json:"role,omitempty"`                                  // Field number adjusted
+	IsActive      bool                   `protobuf:"varint,6,opt,name=is_active,json=isActive,proto3" json:"is_active,omitempty"`         // Field number adjusted
+	CreatedAt     string                 `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`       // Field number adjusted (RFC3339)
+	UpdatedAt     string                 `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`       // Field number adjusted (RFC3339)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1415,6 +1440,13 @@ func (x *User) GetEmail() string {
 	return ""
 }
 
+func (x *User) GetPhoneNumber() string {
+	if x != nil {
+		return x.PhoneNumber
+	}
+	return ""
+}
+
 func (x *User) GetRole() string {
 	if x != nil {
 		return x.Role
@@ -1447,11 +1479,12 @@ var File_proto_user_proto protoreflect.FileDescriptor
 
 const file_proto_user_proto_rawDesc = "" +
 	"\n" +
-	"\x10proto/user.proto\x12\x04user\"_\n" +
+	"\x10proto/user.proto\x12\x04user\"\x82\x01\n" +
 	"\x0fRegisterRequest\x12\x1a\n" +
 	"\busername\x18\x01 \x01(\tR\busername\x12\x14\n" +
 	"\x05email\x18\x02 \x01(\tR\x05email\x12\x1a\n" +
-	"\bpassword\x18\x03 \x01(\tR\bpassword\"+\n" +
+	"\bpassword\x18\x03 \x01(\tR\bpassword\x12!\n" +
+	"\fphone_number\x18\x04 \x01(\tR\vphoneNumber\"+\n" +
 	"\x10RegisterResponse\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"@\n" +
 	"\fLoginRequest\x12\x14\n" +
@@ -1464,21 +1497,23 @@ const file_proto_user_proto_rawDesc = "" +
 	"\x0eLogoutResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\",\n" +
 	"\x11GetProfileRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId\"\xce\x01\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"\xf1\x01\n" +
 	"\x12GetProfileResponse\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
-	"\x05email\x18\x03 \x01(\tR\x05email\x12\x12\n" +
-	"\x04role\x18\x04 \x01(\tR\x04role\x12\x1b\n" +
-	"\tis_active\x18\x05 \x01(\bR\bisActive\x12\x1d\n" +
+	"\x05email\x18\x03 \x01(\tR\x05email\x12!\n" +
+	"\fphone_number\x18\x04 \x01(\tR\vphoneNumber\x12\x12\n" +
+	"\x04role\x18\x05 \x01(\tR\x04role\x12\x1b\n" +
+	"\tis_active\x18\x06 \x01(\bR\bisActive\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x06 \x01(\tR\tcreatedAt\x12\x1d\n" +
+	"created_at\x18\a \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\a \x01(\tR\tupdatedAt\"a\n" +
+	"updated_at\x18\b \x01(\tR\tupdatedAt\"\x84\x01\n" +
 	"\x14UpdateProfileRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
-	"\x05email\x18\x03 \x01(\tR\x05email\"1\n" +
+	"\x05email\x18\x03 \x01(\tR\x05email\x12!\n" +
+	"\fphone_number\x18\x04 \x01(\tR\vphoneNumber\"1\n" +
 	"\x15UpdateProfileResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\"v\n" +
 	"\x15ChangePasswordRequest\x12\x17\n" +
@@ -1526,17 +1561,18 @@ const file_proto_user_proto_rawDesc = "" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x1b\n" +
 	"\tis_active\x18\x03 \x01(\bR\bisActive\"<\n" +
 	" AdminSetUserActiveStatusResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess\"\xc0\x01\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"\xe3\x01\n" +
 	"\x04User\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
-	"\x05email\x18\x03 \x01(\tR\x05email\x12\x12\n" +
-	"\x04role\x18\x04 \x01(\tR\x04role\x12\x1b\n" +
-	"\tis_active\x18\x05 \x01(\bR\bisActive\x12\x1d\n" +
+	"\x05email\x18\x03 \x01(\tR\x05email\x12!\n" +
+	"\fphone_number\x18\x04 \x01(\tR\vphoneNumber\x12\x12\n" +
+	"\x04role\x18\x05 \x01(\tR\x04role\x12\x1b\n" +
+	"\tis_active\x18\x06 \x01(\bR\bisActive\x12\x1d\n" +
 	"\n" +
-	"created_at\x18\x06 \x01(\tR\tcreatedAt\x12\x1d\n" +
+	"created_at\x18\a \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\a \x01(\tR\tupdatedAt2\xcc\a\n" +
+	"updated_at\x18\b \x01(\tR\tupdatedAt2\xcc\a\n" +
 	"\vUserService\x129\n" +
 	"\bRegister\x12\x15.user.RegisterRequest\x1a\x16.user.RegisterResponse\x120\n" +
 	"\x05Login\x12\x12.user.LoginRequest\x1a\x13.user.LoginResponse\x123\n" +

@@ -7,7 +7,7 @@ import (
 	"github.com/Abdurahmanit/GroupProject/api-gateway/internal/config"
 	"github.com/Abdurahmanit/GroupProject/api-gateway/internal/handler"
 	"github.com/Abdurahmanit/GroupProject/api-gateway/internal/middleware"
-	"github.com/Abdurahmanit/GroupProject/api-gateway/internal/router" // Import the router package
+	"github.com/Abdurahmanit/GroupProject/api-gateway/internal/router"
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"

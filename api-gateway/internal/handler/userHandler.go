@@ -26,23 +26,36 @@ func NewUserHandler(conn *grpc.ClientConn, logger *zap.Logger) *UserHandler {
 
 // Register handles user registration requests.
 func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
-	var req user.RegisterRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.Error("Failed to decode request for Register", zap.Error(err))
+	var grpcReq user.RegisterRequest // Decode directly into gRPC request type
+	if err := json.NewDecoder(r.Body).Decode(&grpcReq); err != nil {
+		h.logger.Error("Failed to decode request body for Register HTTP", zap.Error(err))
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	resp, err := h.userClient.Register(context.Background(), &req)
+	// Basic validation for presence (more robust validation in usecase/service)
+	if grpcReq.GetUsername() == "" || grpcReq.GetEmail() == "" || grpcReq.GetPassword() == "" || grpcReq.GetPhoneNumber() == "" {
+		h.logger.Warn("Missing required fields for Register HTTP",
+			zap.String("username", grpcReq.GetUsername()),
+			zap.String("email", grpcReq.GetEmail()),
+			zap.Bool("passwordEmpty", grpcReq.GetPassword() == ""),
+			zap.String("phoneNumber", grpcReq.GetPhoneNumber()))
+		http.Error(w, "Username, email, password, and phone number are required", http.StatusBadRequest)
+		return
+	}
+	h.logger.Info("HTTP Register request received", zap.String("email", grpcReq.GetEmail()), zap.String("phoneNumber", grpcReq.GetPhoneNumber()))
+
+	resp, err := h.userClient.Register(r.Context(), &grpcReq) // Pass the decoded struct
 	if err != nil {
-		h.logger.Error("Failed to register user via gRPC", zap.Error(err))
-		s, _ := status.FromError(err) // Even if not ok, s will be non-nil with codes.Unknown
+		h.logger.Error("Failed to register user via gRPC from API Gateway", zap.String("email", grpcReq.GetEmail()), zap.Error(err))
+		s, _ := status.FromError(err)
 		http.Error(w, s.Message(), GRPCCodeToHTTPStatus(s.Code()))
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(resp)
+	h.logger.Info("HTTP Register request processed successfully", zap.String("email", grpcReq.GetEmail()))
 }
 
 // Login handles user login requests.
@@ -88,46 +101,56 @@ func (h *UserHandler) Logout(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value("user_id").(string)
 	if !ok || userID == "" {
-		h.logger.Warn("User ID not found in token for GetProfile")
+		h.logger.Warn("User ID not found in token for GetProfile HTTP request")
 		http.Error(w, "User ID not found in token", http.StatusUnauthorized)
 		return
 	}
-	req := &user.GetProfileRequest{UserId: userID}
-	resp, err := h.userClient.GetProfile(context.Background(), req)
+	h.logger.Info("HTTP GetProfile request received", zap.String("userID", userID))
+	grpcReq := &user.GetProfileRequest{UserId: userID}
+	resp, err := h.userClient.GetProfile(r.Context(), grpcReq)
 	if err != nil {
-		h.logger.Error("Failed to get profile via gRPC", zap.String("userID", userID), zap.Error(err))
+		h.logger.Error("Failed to get profile via gRPC from API Gateway", zap.String("userID", userID), zap.Error(err))
 		s, _ := status.FromError(err)
 		http.Error(w, s.Message(), GRPCCodeToHTTPStatus(s.Code()))
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	json.NewEncoder(w).Encode(resp) // resp is GetProfileResponse which now includes PhoneNumber
+	h.logger.Info("HTTP GetProfile request processed successfully", zap.String("userID", userID))
 }
 
 // UpdateProfile handles requests to update user profile.
 func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value("user_id").(string)
 	if !ok || userID == "" {
-		h.logger.Warn("User ID not found in token for UpdateProfile")
+		h.logger.Warn("User ID not found in token for UpdateProfile HTTP request")
 		http.Error(w, "User ID not found in token", http.StatusUnauthorized)
 		return
 	}
-	var reqBody user.UpdateProfileRequest
-	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+
+	var grpcReq user.UpdateProfileRequest // Decode directly into gRPC request type
+	if err := json.NewDecoder(r.Body).Decode(&grpcReq); err != nil {
+		h.logger.Error("Failed to decode request body for UpdateProfile HTTP", zap.String("userID", userID), zap.Error(err))
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	reqBody.UserId = userID
+	grpcReq.UserId = userID // Ensure UserId from token is used, not from body if present
 
-	resp, err := h.userClient.UpdateProfile(context.Background(), &reqBody)
+	h.logger.Info("HTTP UpdateProfile request received", zap.String("userID", userID),
+		zap.String("username", grpcReq.GetUsername()),
+		zap.String("email", grpcReq.GetEmail()),
+		zap.String("phoneNumber", grpcReq.GetPhoneNumber()))
+
+	resp, err := h.userClient.UpdateProfile(r.Context(), &grpcReq) // Pass the decoded struct
 	if err != nil {
-		h.logger.Error("Failed to update profile via gRPC", zap.String("userID", userID), zap.Error(err))
+		h.logger.Error("Failed to update profile via gRPC from API Gateway", zap.String("userID", userID), zap.Error(err))
 		s, _ := status.FromError(err)
 		http.Error(w, s.Message(), GRPCCodeToHTTPStatus(s.Code()))
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
+	h.logger.Info("HTTP UpdateProfile request processed successfully", zap.String("userID", userID))
 }
 
 // ChangePassword handles requests to change user password.

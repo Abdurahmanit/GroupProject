@@ -3,20 +3,27 @@ package usecase
 import (
 	"context"
 	"errors"
+	"regexp" // For basic phone number validation
 
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/entity"
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/jwt"
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/repository"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.uber.org/zap" // Ensure zap is imported
+	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
 
 var (
-	ErrInvalidCredentials = errors.New("invalid email or password")
-	ErrUnauthorized       = errors.New("unauthorized")
-	ErrUserInactive       = errors.New("user account is inactive")
+	ErrInvalidCredentials   = errors.New("invalid email or password")
+	ErrUnauthorized         = errors.New("unauthorized")
+	ErrUserInactive         = errors.New("user account is inactive")
+	ErrInvalidPhoneNumber   = errors.New("invalid phone number format")
+	ErrPhoneNumberRequired  = errors.New("phone number is required")
+	ErrDuplicatePhoneNumber = errors.New("phone number already exists") // New errorы to match repository
+	ErrDuplicateEmail       = errors.New("email already exists")        // Usecase level error for consistency
 )
+
+var phoneRegex = regexp.MustCompile(`^\+?[1-9]\d{1,14}$`)
 
 type UserUsecase struct {
 	repo      *repository.UserRepository
@@ -32,22 +39,61 @@ func NewUserUsecase(repo *repository.UserRepository, jwtSecret string, logger *z
 	}
 }
 
-func (u *UserUsecase) Register(ctx context.Context, username, email, password string) (string, error) {
-	u.logger.Info("Attempting to register user", zap.String("email", email), zap.String("username", username))
+func (u *UserUsecase) Register(ctx context.Context, username, email, password, phoneNumber string) (string, error) {
+	u.logger.Info("Attempting to register user in usecase", zap.String("email", email), zap.String("username", username), zap.String("phoneNumber", phoneNumber))
+
+	if phoneNumber == "" {
+		u.logger.Warn("Registration attempt with empty phone number", zap.String("email", email))
+		return "", ErrPhoneNumberRequired
+	}
+	if !phoneRegex.MatchString(phoneNumber) {
+		u.logger.Warn("Registration attempt with invalid phone number format", zap.String("email", email), zap.String("phoneNumber", phoneNumber))
+		return "", ErrInvalidPhoneNumber
+	}
+
+	// Check if phone number already exists
+	_, err := u.repo.GetUserByPhoneNumber(ctx, phoneNumber)
+	if err == nil { // User found with this phone number, means it's a duplicate
+		u.logger.Warn("Registration attempt with already existing phone number", zap.String("phoneNumber", phoneNumber))
+		return "", ErrDuplicatePhoneNumber
+	} else if !errors.Is(err, repository.ErrUserNotFound) { // An unexpected error occurred during the check
+		u.logger.Error("Error checking for existing phone number during registration", zap.String("phoneNumber", phoneNumber), zap.Error(err))
+		return "", err
+	}
+	// If err is ErrUserNotFound, then the phone number is not taken, which is good.
+
+	// Check if email already exists (optional here if DB index is primary guard, but good for early feedback)
+	_, err = u.repo.GetUserByEmail(ctx, email)
+	if err == nil {
+		u.logger.Warn("Registration attempt with already existing email", zap.String("email", email))
+		return "", ErrDuplicateEmail
+	} else if !errors.Is(err, repository.ErrUserNotFound) {
+		u.logger.Error("Error checking for existing email during registration", zap.String("email", email), zap.Error(err))
+		return "", err
+	}
+
 	user := &entity.User{
-		Username: username,
-		Email:    email,
-		Password: password,
-		Role:     "customer",
-		IsActive: true,
+		Username:    username,
+		Email:       email,
+		Password:    password,
+		PhoneNumber: phoneNumber,
+		Role:        "customer",
+		IsActive:    true,
 	}
 
 	objectID, err := u.repo.CreateUser(ctx, user)
 	if err != nil {
-		u.logger.Error("Failed to register user in usecase", zap.String("email", email), zap.Error(err))
-		return "", err
+		u.logger.Error("Failed to register user (repository CreateUser error)", zap.String("email", email), zap.Error(err))
+		// Map repository-specific errors to usecase errors if necessary, or propagate directly
+		if errors.Is(err, repository.ErrDuplicateEmail) {
+			return "", ErrDuplicateEmail
+		}
+		if errors.Is(err, repository.ErrDuplicatePhoneNumber) {
+			return "", ErrDuplicatePhoneNumber
+		}
+		return "", err // Generic error
 	}
-	u.logger.Info("User registered successfully", zap.String("userID", objectID.Hex()), zap.String("email", email))
+	u.logger.Info("User registered successfully in usecase", zap.String("userID", objectID.Hex()), zap.String("email", email))
 	return objectID.Hex(), nil
 }
 
@@ -95,49 +141,91 @@ func (u *UserUsecase) Logout(ctx context.Context, userIDHex string) error {
 }
 
 func (u *UserUsecase) GetProfile(ctx context.Context, userIDHex string) (*entity.User, error) {
-	u.logger.Info("Attempting to get profile", zap.String("userID", userIDHex))
+	u.logger.Info("Attempting to get profile in usecase", zap.String("userID", userIDHex))
 	objectID, err := primitive.ObjectIDFromHex(userIDHex)
 	if err != nil {
-		u.logger.Error("Invalid user ID format for GetProfile", zap.String("userIDHex", userIDHex), zap.Error(err))
+		u.logger.Error("Invalid user ID format for GetProfile in usecase", zap.String("userIDHex", userIDHex), zap.Error(err))
 		return nil, errors.New("invalid user ID format")
 	}
 	user, err := u.repo.GetUserByID(ctx, objectID)
 	if err != nil {
-		u.logger.Error("Failed to get user profile", zap.String("userID", userIDHex), zap.Error(err))
+		u.logger.Error("Failed to get user profile from repository", zap.String("userID", userIDHex), zap.Error(err))
 		return nil, err
 	}
-	u.logger.Info("User profile retrieved successfully", zap.String("userID", userIDHex))
+	u.logger.Info("User profile retrieved successfully in usecase", zap.String("userID", userIDHex))
 	return user, nil
 }
 
-func (u *UserUsecase) UpdateProfile(ctx context.Context, userIDHex, username, email string) error {
-	u.logger.Info("Attempting to update profile", zap.String("userID", userIDHex), zap.String("newUsername", username), zap.String("newEmail", email))
+func (u *UserUsecase) UpdateProfile(ctx context.Context, userIDHex, username, email, phoneNumber string) error {
+	u.logger.Info("Attempting to update profile in usecase",
+		zap.String("userID", userIDHex),
+		zap.String("newUsername", username),
+		zap.String("newEmail", email),
+		zap.String("newPhoneNumber", phoneNumber))
+
 	objectID, err := primitive.ObjectIDFromHex(userIDHex)
 	if err != nil {
-		u.logger.Error("Invalid user ID format for UpdateProfile", zap.String("userIDHex", userIDHex), zap.Error(err))
+		u.logger.Error("Invalid user ID format for UpdateProfile in usecase", zap.String("userIDHex", userIDHex), zap.Error(err))
 		return errors.New("invalid user ID format")
 	}
-	user, err := u.repo.GetUserByID(ctx, objectID)
+
+	currentUser, err := u.repo.GetUserByID(ctx, objectID)
 	if err != nil {
-		u.logger.Error("Failed to get user for UpdateProfile", zap.String("userID", userIDHex), zap.Error(err))
+		u.logger.Error("Failed to get user for UpdateProfile from repository", zap.String("userID", userIDHex), zap.Error(err))
 		return err
 	}
-	if !user.IsActive {
-		u.logger.Warn("Attempt to update profile of inactive user", zap.String("userID", userIDHex))
+	if !currentUser.IsActive {
+		u.logger.Warn("Attempt to update profile of inactive user in usecase", zap.String("userID", userIDHex))
 		return ErrUserInactive
 	}
 
-	oldEmail := user.Email
-	oldUsername := user.Username
-	user.Username = username
-	user.Email = email
+	updateUser := *currentUser // Create a mutable copy
 
-	err = u.repo.UpdateUser(ctx, user)
+	if username != "" { // Allow partial updates
+		updateUser.Username = username
+	}
+	if email != "" && email != currentUser.Email {
+		// Optional: Check for email duplication if changing
+		_, err := u.repo.GetUserByEmail(ctx, email)
+		if err == nil { // Email taken by someone else
+			u.logger.Warn("UpdateProfile attempt with email already in use by another user", zap.String("userID", userIDHex), zap.String("email", email))
+			return ErrDuplicateEmail
+		} else if !errors.Is(err, repository.ErrUserNotFound) {
+			u.logger.Error("Error checking for existing email during profile update", zap.String("email", email), zap.Error(err))
+			return err
+		}
+		updateUser.Email = email
+	}
+
+	if phoneNumber != "" && phoneNumber != currentUser.PhoneNumber {
+		if !phoneRegex.MatchString(phoneNumber) {
+			u.logger.Warn("UpdateProfile attempt with invalid phone number format", zap.String("userID", userIDHex), zap.String("phoneNumber", phoneNumber))
+			return ErrInvalidPhoneNumber
+		}
+		// Check if new phone number is already taken by another user
+		existingUserWithPhone, err := u.repo.GetUserByPhoneNumber(ctx, phoneNumber)
+		if err == nil && existingUserWithPhone.ID != objectID { // Phone taken by someone else
+			u.logger.Warn("UpdateProfile attempt with phone number already in use by another user", zap.String("userID", userIDHex), zap.String("phoneNumber", phoneNumber))
+			return ErrDuplicatePhoneNumber
+		} else if err != nil && !errors.Is(err, repository.ErrUserNotFound) { // Unexpected error
+			u.logger.Error("Error checking for existing phone number during profile update", zap.String("phoneNumber", phoneNumber), zap.Error(err))
+			return err
+		}
+		updateUser.PhoneNumber = phoneNumber
+	}
+
+	err = u.repo.UpdateUser(ctx, &updateUser)
 	if err != nil {
-		u.logger.Error("Failed to update user profile in repository", zap.String("userID", userIDHex), zap.String("newEmail", email), zap.Error(err))
+		u.logger.Error("Failed to update user profile in repository via usecase", zap.String("userID", userIDHex), zap.Error(err))
+		if errors.Is(err, repository.ErrDuplicateEmail) {
+			return ErrDuplicateEmail
+		}
+		if errors.Is(err, repository.ErrDuplicatePhoneNumber) {
+			return ErrDuplicatePhoneNumber
+		}
 		return err
 	}
-	u.logger.Info("User profile updated successfully", zap.String("userID", userIDHex), zap.String("oldUsername", oldUsername), zap.String("newUsername", username), zap.String("oldEmail", oldEmail), zap.String("newEmail", email))
+	u.logger.Info("User profile updated successfully in usecase", zap.String("userID", userIDHex))
 	return nil
 }
 
@@ -273,17 +361,17 @@ func (u *UserUsecase) AdminListUsers(ctx context.Context, adminIDHex string, ski
 }
 
 func (u *UserUsecase) AdminSearchUsers(ctx context.Context, adminIDHex, query string, skip, limit int64) ([]*entity.User, error) {
-	u.logger.Info("Admin attempting to search users", zap.String("adminID", adminIDHex), zap.String("query", query), zap.Int64("skip", skip), zap.Int64("limit", limit))
+	u.logger.Info("Admin attempting to search users (usecase)", zap.String("adminID", adminIDHex), zap.String("query", query), zap.Int64("skip", skip), zap.Int64("limit", limit))
 	admin, err := u.AdminCheck(ctx, adminIDHex)
 	if err != nil {
 		return nil, err
 	}
 	users, err := u.repo.SearchUsers(ctx, query, skip, limit)
 	if err != nil {
-		u.logger.Error("Admin failed to search users", zap.String("adminID", admin.ID.Hex()), zap.String("query", query), zap.Error(err))
+		u.logger.Error("Admin failed to search users (repository error)", zap.String("adminID", admin.ID.Hex()), zap.String("query", query), zap.Error(err))
 		return nil, err
 	}
-	u.logger.Info("Admin successfully searched users", zap.String("adminID", admin.ID.Hex()), zap.String("query", query), zap.Int("count", len(users)))
+	u.logger.Info("Admin successfully searched users (usecase)", zap.String("adminID", admin.ID.Hex()), zap.String("query", query), zap.Int("count", len(users)))
 	return users, nil
 }
 
