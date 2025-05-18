@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package news;
 
-option go_package = "github.com/Abdurahmanit/GroupProject/gen/go/news;newspb";
+option go_package = "github.com/Abdurahmanit/GroupProject/news-service/proto;newspb";
 
 import "google/protobuf/timestamp.proto";
 
