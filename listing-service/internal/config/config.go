@@ -29,7 +29,7 @@ func Load() (*Config, error) {
 		MinIOAccessKey:  getEnv("MINIO_ACCESS_KEY", "minioadmin"),
 		MinIOSecretKey:  getEnv("MINIO_SECRET_KEY", "minioadmin"),
 		MinIOBucket:     getEnv("MINIO_BUCKET", "listings-photos"),
-		GRPCPort:    getEnv("GRPC_PORT", "50051"),
+		GRPCPort:    getEnv("GRPC_PORT", "50052"),
 	}
 
 	return cfg, nil
