@@ -1,13 +1,13 @@
 package main
 
 import (
-	"context" // Добавлен импорт
+	"context"
 	"log"
 	"os"
 
-	// Путь к вашему пакету mongo (если он отличается, поправь)
-	"github.com/Abdurahmanit/GroupProject/news-service/internal/adapter/mongo"
+	mongoAdapter "github.com/Abdurahmanit/GroupProject/news-service/internal/adapter/mongo"
 	"github.com/Abdurahmanit/GroupProject/news-service/internal/config"
+	"github.com/Abdurahmanit/GroupProject/news-service/internal/usecase"
 	"go.uber.org/zap"
 )
 
@@ -35,14 +35,12 @@ func main() {
 		zap.String("mongo_database", cfg.Mongo.Database),
 	)
 
-	// Инициализация MongoDB
-	mongoClient, err := mongo.NewMongoDBConnection(&cfg.Mongo)
+	mongoClient, err := mongoAdapter.NewMongoDBConnection(&cfg.Mongo)
 	if err != nil {
 		logger.Fatal("Failed to connect to MongoDB", zap.Error(err))
 	}
-	// Важно закрывать соединение при завершении работы приложения
 	defer func() {
-		if err = mongoClient.Disconnect(context.TODO()); err != nil { // Используем context.TODO() для Disconnect
+		if err = mongoClient.Disconnect(context.TODO()); err != nil {
 			logger.Error("Failed to disconnect MongoDB", zap.Error(err))
 		} else {
 			logger.Info("MongoDB connection closed.")
@@ -50,8 +48,12 @@ func main() {
 	}()
 	logger.Info("Successfully connected to MongoDB!")
 
-	logger.Info("News Service starting", zap.String("port", cfg.GRPC.Port))
+	newsRepo := mongoAdapter.NewNewsMongoRepository(mongoClient, cfg.Mongo.Database)
+	logger.Info("News repository initialized")
 
-	// Здесь будет код для ожидания сигнала завершения и graceful shutdown,
-	// а пока что приложение просто завершится после вывода логов.
+	newsUC := usecase.NewNewsUseCase(newsRepo)
+	_ = newsUC
+	logger.Info("News use case initialized")
+
+	logger.Info("News Service setup complete. Ready to start gRPC server.", zap.String("port", cfg.GRPC.Port))
 }
