@@ -15,3 +15,6 @@ Desktop.init
 .env
 .env.*
 !.env.example
+
+/news-service/config.yaml
+/news-service/news-service
