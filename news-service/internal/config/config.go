@@ -46,7 +46,7 @@ type RedisConfig struct {
 }
 
 func LoadConfig(path string) (*Config, error) {
-	viper.SetDefault("grpc.port", "50051")
+	viper.SetDefault("grpc.port", "50055")
 	viper.SetDefault("grpc.max_recv_msg_size", 4194304)
 	viper.SetDefault("grpc.max_send_msg_size", 4194304)
 	viper.SetDefault("grpc.timeout", "10s")
