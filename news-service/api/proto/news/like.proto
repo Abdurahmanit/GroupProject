@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package news;
+
+option go_package = "github.com/Abdurahmanit/GroupProject/gen/go/news;newspb";
+
+message LikeNewsRequest {
+  string news_id = 1;
+  string user_id = 2;
+}
+
+message LikeNewsResponse {
+  bool success = 1;
+  int64 like_count = 2;
+}
+
+message UnlikeNewsRequest {
+  string news_id = 1;
+  string user_id = 2;
+}
+
+message UnlikeNewsResponse {
+  bool success = 1;
+  int64 like_count = 2;
+}
+
+message GetLikesCountRequest {
+  string news_id = 1;
+}
+
+message GetLikesCountResponse {
+  int64 like_count = 1;
+}

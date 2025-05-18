@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package news;
+
+option go_package = "github.com/Abdurahmanit/GroupProject/gen/go/news;newspb";
+
+import "google/protobuf/timestamp.proto";
+
+message Comment {
+  string id = 1;
+  string news_id = 2;
+  string user_id = 3;
+  string content = 4;
+  google.protobuf.Timestamp created_at = 5;
+  google.protobuf.Timestamp updated_at = 6;
+}
+
+message CreateCommentRequest {
+  string news_id = 1;
+  string user_id = 2;
+  string content = 3;
+}
+
+message CreateCommentResponse {
+  string id = 1;
+}
+
+message GetCommentsForNewsRequest {
+  string news_id = 1;
+  int32 page = 2;
+  int32 page_size = 3;
+}
+
+message GetCommentsForNewsResponse {
+  repeated Comment comments = 1;
+  int32 total_count = 2;
+}
+
+message DeleteCommentRequest {
+  string comment_id = 1;
+  string user_id = 2;
+}
+
+message DeleteCommentResponse {
+  bool success = 1;
+}

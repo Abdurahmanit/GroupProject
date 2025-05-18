@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package news;
+
+option go_package = "github.com/Abdurahmanit/GroupProject/gen/go/news;newspb";
+
+import "google/protobuf/timestamp.proto";
+
+message News {
+string id = 1;
+string title = 2;
+string content = 3;
+string author_id = 4;
+google.protobuf.Timestamp created_at = 5;
+google.protobuf.Timestamp updated_at = 6;
+}
+
+message CreateNewsRequest {
+string title = 1;
+string content = 2;
+string author_id = 3;
+}
+
+message CreateNewsResponse {
+string id = 1;
+}
+
+message GetNewsRequest {
+string id = 1;
+}
+
+message GetNewsResponse {
+News news = 1;
+}
+
+message UpdateNewsRequest {
+string id = 1;
+optional string title = 2;
+optional string content = 3;
+}
+
+message UpdateNewsResponse {
+News news = 1;
+}
+
+message DeleteNewsRequest {
+string id = 1;
+}
+
+message DeleteNewsResponse {
+bool success = 1;
+}
+
+message ListNewsRequest {
+int32 page = 1;
+int32 page_size = 2;
+}
+
+message ListNewsResponse {
+repeated News news = 1;
+int32 total_count = 2;
+}

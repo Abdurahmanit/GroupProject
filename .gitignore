@@ -1,0 +1,17 @@
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+.DS_Store
+
+Thumbs.db
+Desktop.init
+
+# Log files
+*.log
+
+.env
+.env.*
+!.env.example
