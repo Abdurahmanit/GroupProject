@@ -10,7 +10,7 @@ import (
 
 type Config struct {
 	GRPC  GRPCConfig  `mapstructure:"grpc"`
-	Mongo MongoConfig `mapstructure:"mongo"
+	Mongo MongoConfig `mapstructure:"mongo"`
 	NATS  NATSConfig  `mapstructure:"nats"`
 	Redis RedisConfig `mapstructure:"redis"`
 }
@@ -49,7 +49,6 @@ func LoadConfig(path string) (*Config, error) {
 	viper.SetDefault("grpc.max_send_msg_size", 4194304)
 	viper.SetDefault("grpc.timeout", "10s")
 
-	// Значения по умолчанию для MongoDB
 	viper.SetDefault("mongo.uri", "mongodb://localhost:27017")
 	viper.SetDefault("mongo.database", "news_service_db")
 	viper.SetDefault("mongo.connect_timeout", "10s")
