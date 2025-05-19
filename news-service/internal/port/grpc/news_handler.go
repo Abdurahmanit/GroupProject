@@ -2,8 +2,10 @@ package grpc
 
 import (
 	"context"
+	"errors" // Добавляем импорт errors
 
 	"github.com/Abdurahmanit/GroupProject/news-service/internal/entity"
+	"github.com/Abdurahmanit/GroupProject/news-service/internal/port/repository" // Импорт для repository.ErrNotFound
 	"github.com/Abdurahmanit/GroupProject/news-service/internal/usecase"
 	newspb "github.com/Abdurahmanit/GroupProject/news-service/proto"
 	"google.golang.org/grpc/codes"
@@ -52,16 +54,16 @@ func (h *NewsHandler) CreateNews(ctx context.Context, req *newspb.CreateNewsRequ
 func (h *NewsHandler) GetNews(ctx context.Context, req *newspb.GetNewsRequest) (*newspb.GetNewsResponse, error) {
 	newsEntity, err := h.newsUseCase.GetNewsByID(ctx, req.GetId())
 	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) { // ИЗМЕНЕНО
+			return nil, status.Errorf(codes.NotFound, "news with id %s not found", req.GetId())
+		}
 		return nil, status.Errorf(codes.Internal, "failed to get news: %v", err)
 	}
-	if newsEntity == nil {
-		return nil, status.Errorf(codes.NotFound, "news with id %s not found", req.GetId())
-	}
+	// Проверка newsEntity == nil здесь избыточна, если ErrNotFound правильно обрабатывается
 	return &newspb.GetNewsResponse{News: newsEntityToProto(newsEntity)}, nil
 }
 
 func (h *NewsHandler) ListNews(ctx context.Context, req *newspb.ListNewsRequest) (*newspb.ListNewsResponse, error) {
-	// TODO: Добавить передачу фильтров из req в use case, если они есть в proto
 	input := usecase.ListNewsInput{
 		Page:     int(req.GetPage()),
 		PageSize: int(req.GetPageSize()),
@@ -93,6 +95,9 @@ func (h *NewsHandler) UpdateNews(ctx context.Context, req *newspb.UpdateNewsRequ
 
 	updatedNews, err := h.newsUseCase.UpdateNews(ctx, input)
 	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) { // ИЗМЕНЕНО
+			return nil, status.Errorf(codes.NotFound, "news with id %s not found for update", req.GetId())
+		}
 		return nil, status.Errorf(codes.Internal, "failed to update news: %v", err)
 	}
 	return &newspb.UpdateNewsResponse{News: newsEntityToProto(updatedNews)}, nil
@@ -101,7 +106,9 @@ func (h *NewsHandler) UpdateNews(ctx context.Context, req *newspb.UpdateNewsRequ
 func (h *NewsHandler) DeleteNews(ctx context.Context, req *newspb.DeleteNewsRequest) (*newspb.DeleteNewsResponse, error) {
 	err := h.newsUseCase.DeleteNews(ctx, req.GetId())
 	if err != nil {
-		// TODO: Обработать ErrNotFound
+		if errors.Is(err, repository.ErrNotFound) { // ИЗМЕНЕНО
+			return nil, status.Errorf(codes.NotFound, "news with id %s not found for delete", req.GetId())
+		}
 		return nil, status.Errorf(codes.Internal, "failed to delete news: %v", err)
 	}
 	return &newspb.DeleteNewsResponse{Success: true}, nil
