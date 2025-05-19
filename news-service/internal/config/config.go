@@ -10,7 +10,7 @@ import (
 
 type Config struct {
 	GRPC  GRPCConfig  `mapstructure:"grpc"`
-	Mongo MongoConfig `mapstructure:"mongo"` // ИЗМЕНЕНО
+	Mongo MongoConfig `mapstructure:"mongo"
 	NATS  NATSConfig  `mapstructure:"nats"`
 	Redis RedisConfig `mapstructure:"redis"`
 }
@@ -22,13 +22,11 @@ type GRPCConfig struct {
 	Timeout        time.Duration `mapstructure:"timeout"`
 }
 
-// MongoConfig хранит конфигурацию для подключения к MongoDB.
 type MongoConfig struct {
-	URI      string `mapstructure:"uri"`      // Например, "mongodb://localhost:27017"
-	Username string `mapstructure:"username"` // Опционально
-	Password string `mapstructure:"password"` // Опционально
-	Database string `mapstructure:"database"` // Имя базы данных
-	// Опционально можно добавить параметры для пула соединений, таймауты и т.д.
+	URI            string        `mapstructure:"uri"`
+	Username       string        `mapstructure:"username"`
+	Password       string        `mapstructure:"password"`
+	Database       string        `mapstructure:"database"`
 	ConnectTimeout time.Duration `mapstructure:"connect_timeout"`
 	MinPoolSize    uint64        `mapstructure:"min_pool_size"`
 	MaxPoolSize    uint64        `mapstructure:"max_pool_size"`
@@ -53,10 +51,10 @@ func LoadConfig(path string) (*Config, error) {
 
 	// Значения по умолчанию для MongoDB
 	viper.SetDefault("mongo.uri", "mongodb://localhost:27017")
-	viper.SetDefault("mongo.database", "news_service_db") // Пример имени БД
+	viper.SetDefault("mongo.database", "news_service_db")
 	viper.SetDefault("mongo.connect_timeout", "10s")
-	viper.SetDefault("mongo.min_pool_size", 0)   // 0 - без ограничения или значение по умолчанию драйвера
-	viper.SetDefault("mongo.max_pool_size", 100) // Значение по умолчанию драйвера
+	viper.SetDefault("mongo.min_pool_size", 0)
+	viper.SetDefault("mongo.max_pool_size", 100)
 
 	viper.SetDefault("nats.url", "nats://localhost:4222")
 	viper.SetDefault("nats.connect_timeout", "5s")
@@ -79,7 +77,7 @@ func LoadConfig(path string) (*Config, error) {
 	}
 
 	viper.AutomaticEnv()
-	viper.SetEnvPrefix("NEWS") // Например, NEWS_MONGO_URI
+	viper.SetEnvPrefix("NEWS")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {

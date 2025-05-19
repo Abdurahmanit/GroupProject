@@ -27,7 +27,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("can't initialize zap logger: %v", err)
 	}
-	defer logger.Sync()
+	defer func() {
+		_ = logger.Sync()
+	}()
 
 	logger.Info("Configuration loaded successfully!",
 		zap.String("grpc_port", cfg.GRPC.Port),
@@ -49,11 +51,17 @@ func main() {
 	logger.Info("Successfully connected to MongoDB!")
 
 	newsRepo := mongoAdapter.NewNewsMongoRepository(mongoClient, cfg.Mongo.Database)
-	logger.Info("News repository initialized")
+	commentRepo := mongoAdapter.NewCommentMongoRepository(mongoClient, cfg.Mongo.Database)
+	likeRepo := mongoAdapter.NewLikeMongoRepository(mongoClient, cfg.Mongo.Database)
+	logger.Info("Repositories initialized")
 
 	newsUC := usecase.NewNewsUseCase(newsRepo)
+	commentUC := usecase.NewCommentUseCase(commentRepo, newsRepo)
+	likeUC := usecase.NewLikeUseCase(likeRepo, newsRepo)
 	_ = newsUC
-	logger.Info("News use case initialized")
+	_ = commentUC
+	_ = likeUC
+	logger.Info("Use cases initialized")
 
 	logger.Info("News Service setup complete. Ready to start gRPC server.", zap.String("port", cfg.GRPC.Port))
 }
