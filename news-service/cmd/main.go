@@ -4,9 +4,12 @@ import (
 	"context"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	mongoAdapter "github.com/Abdurahmanit/GroupProject/news-service/internal/adapter/mongo"
 	"github.com/Abdurahmanit/GroupProject/news-service/internal/config"
+	grpcPort "github.com/Abdurahmanit/GroupProject/news-service/internal/port/grpc"
 	"github.com/Abdurahmanit/GroupProject/news-service/internal/usecase"
 	"go.uber.org/zap"
 )
@@ -58,10 +61,26 @@ func main() {
 	newsUC := usecase.NewNewsUseCase(newsRepo)
 	commentUC := usecase.NewCommentUseCase(commentRepo, newsRepo)
 	likeUC := usecase.NewLikeUseCase(likeRepo, newsRepo)
-	_ = newsUC
 	_ = commentUC
 	_ = likeUC
 	logger.Info("Use cases initialized")
 
-	logger.Info("News Service setup complete. Ready to start gRPC server.", zap.String("port", cfg.GRPC.Port))
+	newsGRPCHandler := grpcPort.NewNewsHandler(newsUC)
+
+	grpcServer := grpcPort.NewServer(&cfg.GRPC, logger, newsGRPCHandler)
+
+	logger.Info("Starting gRPC server...", zap.String("port", cfg.GRPC.Port))
+
+	go func() {
+		if err := grpcServer.Run(); err != nil {
+			logger.Fatal("gRPC server failed to run", zap.Error(err))
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	logger.Info("Shutting down gRPC server...")
+	logger.Info("News Service shut down.")
 }
