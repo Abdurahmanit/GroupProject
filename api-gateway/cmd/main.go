@@ -35,8 +35,19 @@ func main() {
 	}
 	defer userConn.Close()
 
+	// Connect to Listing Service via gRPC
+	listingConn, err := grpc.NewClient( //nolint:staticcheck // SA1019: grpc.Dial is deprecated
+		fmt.Sprintf("%s:%d", cfg.ListingServiceHost, cfg.ListingServicePort),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		logger.Fatal("Failed to connect to Listing Service", zap.Error(err))
+	}
+	defer listingConn.Close()
+	
 	// Initialize handlers
 	userHandler := handler.NewUserHandler(userConn, logger)
+	listingHandler := handler.NewListingHandler(listingConn, logger)
 	// Add other service handlers here
 
 	// Set up main router
@@ -44,6 +55,7 @@ func main() {
 	r.Use(middleware.Logger(logger))
 
 	router.SetupUserRoutes(r, userHandler, cfg.JWTSecret)
+	router.SetupListingRoutes(r, listingHandler, cfg.JWTSecret)
 	// Setup other routes
 
 	// Start HTTP server
