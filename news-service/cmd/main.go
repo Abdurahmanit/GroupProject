@@ -60,7 +60,7 @@ func main() {
 
 	newsUC := usecase.NewNewsUseCase(newsRepo)
 	commentUC := usecase.NewCommentUseCase(commentRepo, newsRepo)
-	likeUC := usecase.NewLikeUseCase(likeRepo, newsRepo)
+	likeUC := usecase.NewLikeUseCase(likeRepo, newsRepo, commentRepo)
 	_ = commentUC
 	_ = likeUC
 	logger.Info("Use cases initialized")
