@@ -1,7 +1,9 @@
 syntax = "proto3";
 
 package listing;
-option go_package = "github.com/Abdurahmanit/GroupProject/listing-service/genproto/listing_service";
+option go_package = "genproto/listing_service";
+
+import "google/protobuf/timestamp.proto"; // <--- ДОБАВИТЬ ДЛЯ Timestamp
 
 service ListingService {
     rpc CreateListing (CreateListingRequest) returns (ListingResponse);
@@ -10,32 +12,38 @@ service ListingService {
     rpc GetListingByID (GetListingRequest) returns (ListingResponse);
     rpc SearchListings (SearchListingsRequest) returns (SearchListingsResponse);
     rpc UploadPhoto (UploadPhotoRequest) returns (UploadPhotoResponse);
-    rpc GetListingStatus (GetListingRequest) returns (ListingStatusResponse);
+    rpc GetListingStatus (GetListingRequest) returns (ListingStatusResponse); // Может быть, вернуть ListingResponse? Или добавить ID в ответ.
     rpc AddFavorite (AddFavoriteRequest) returns (Empty);
     rpc RemoveFavorite (RemoveFavoriteRequest) returns (Empty);
     rpc GetFavorites (GetFavoritesRequest) returns (GetFavoritesResponse);
-    rpc GetPhotoURLs (GetListingRequest) returns (PhotoURLsResponse);
+    rpc GetPhotoURLs (GetListingRequest) returns (PhotoURLsResponse); // Может быть, вернуть ListingResponse? Или добавить ID в ответ.
     rpc UpdateListingStatus (UpdateListingStatusRequest) returns (ListingResponse);
 }
 
 message Empty {}
 
 message CreateListingRequest {
-    string title = 1;
-    string description = 2;
-    double price = 3;
+    string user_id = 1;       // <--- ДОБАВЛЕНО (ID пользователя, создающего объявление)
+    string category_id = 2;   // <--- ДОБАВЛЕНО
+    string title = 3;
+    string description = 4;
+    double price = 5;
+    // repeated string photos = 6; // Если фото можно загружать сразу при создании
 }
 
 message UpdateListingRequest {
     string id = 1;
-    string title = 2;
-    string description = 3;
-    double price = 4;
-    string status = 5;
+    string user_id = 2;       // <--- ДОБАВЛЕНО (ID пользователя, пытающегося обновить)
+    string category_id = 3;   // <--- ДОБАВЛЕНО (Если категорию можно менять)
+    string title = 4;
+    string description = 5;
+    double price = 6;
+    string status = 7;        // Рассмотри использование enum для статуса
 }
 
 message DeleteListingRequest {
     string id = 1;
+    string user_id = 2;       // <--- ДОБАВЛЕНО (ID пользователя, пытающегося удалить)
 }
 
 message GetListingRequest {
@@ -44,38 +52,54 @@ message GetListingRequest {
 
 message ListingResponse {
     string id = 1;
-    string title = 2;
-    string description = 3;
-    double price = 4;
-    string status = 5;
-    repeated string photos = 6;
-    string created_at = 7;
-    string updated_at = 8;
+    string user_id = 2;       // <--- ДОБАВЛЕНО
+    string category_id = 3;   // <--- ДОБАВЛЕНО
+    string title = 4;
+    string description = 5;
+    double price = 6;
+    string status = 7;        // Рассмотри использование enum для статуса
+    repeated string photos = 8;
+    google.protobuf.Timestamp created_at = 9; // <--- ИЗМЕНЕНО НА Timestamp
+    google.protobuf.Timestamp updated_at = 10;// <--- ИЗМЕНЕНО НА Timestamp
 }
 
 message SearchListingsRequest {
     string query = 1;
     double min_price = 2;
     double max_price = 3;
-    string status = 4;
+    string status = 4;        // Рассмотри использование enum для статуса
+    string category_id = 5;   // <--- ДОБАВЛЕНО (для фильтрации по категории)
+    string user_id = 6;       // <--- ДОБАВЛЕНО (для фильтрации по объявлениям пользователя)
+    int32 page = 7;           // <--- ДОБАВЛЕНО (для пагинации)
+    int32 limit = 8;          // <--- ДОБАВЛЕНО (для пагинации)
+    string sort_by = 9;       // <--- ДОБАВЛЕНО (например, "price", "created_at")
+    string sort_order = 10;   // <--- ДОБАВЛЕНО (например, "asc", "desc")
 }
 
 message SearchListingsResponse {
     repeated ListingResponse listings = 1;
+    int64 total = 2;          // <--- ДОБАВЛЕНО (общее количество найденных записей)
+    int32 page = 3;           // <--- ДОБАВЛЕНО (текущая страница)
+    int32 limit = 4;          // <--- ДОБАВЛЕНО (лимит на странице)
 }
 
 message UploadPhotoRequest {
     string listing_id = 1;
-    string file_name = 2;
-    bytes data = 3;
+    string user_id = 2;       // <--- ДОБАВЛЕНО (ID пользователя, загружающего фото)
+    string file_name = 3;
+    bytes data = 4;
 }
 
 message UploadPhotoResponse {
-    string url = 1;
+    string photo_url = 1;     // <--- Переименовано для ясности (было url)
 }
 
+// ListingStatusResponse и PhotoURLsResponse могут быть избыточны,
+// если GetListingByID возвращает полный ListingResponse.
+// Если они остаются, стоит добавить listing_id в ответ для контекста.
 message ListingStatusResponse {
-    string status = 1;
+    string listing_id = 1; // <--- ДОБАВЛЕНО для контекста
+    string status = 2;
 }
 
 message AddFavoriteRequest {
@@ -94,13 +118,26 @@ message GetFavoritesRequest {
 
 message GetFavoritesResponse {
     repeated string listing_ids = 1;
+    // Если нужно возвращать полные объявления, а не только ID:
+    // repeated ListingResponse listings = 2;
 }
 
 message PhotoURLsResponse {
-    repeated string urls = 1;
+    string listing_id = 1; // <--- ДОБАВЛЕНО для контекста
+    repeated string urls = 2;
 }
 
 message UpdateListingStatusRequest {
     string id = 1;
-    string status = 2;
+    string user_id = 2;       // <--- ДОБАВЛЕНО (ID пользователя, изменяющего статус)
+    string status = 3;        // Рассмотри использование enum для статуса
 }
+
+// Пример enum для статуса (опционально, но улучшает читаемость и типизацию)
+// enum ListingStatusEnum {
+//     LISTING_STATUS_UNSPECIFIED = 0;
+//     LISTING_STATUS_ACTIVE = 1;
+//     LISTING_STATUS_SOLD = 2;
+//     LISTING_STATUS_RESERVED = 3;
+//     LISTING_STATUS_INACTIVE = 4;
+// }

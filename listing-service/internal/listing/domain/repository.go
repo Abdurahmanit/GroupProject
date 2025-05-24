@@ -7,7 +7,7 @@ type ListingRepository interface {
 	Update(ctx context.Context, listing *Listing) error
 	Delete(ctx context.Context, id string) error
 	FindByID(ctx context.Context, id string) (*Listing, error)
-	FindByFilter(ctx context.Context, filter Filter) ([]*Listing, error)
+	FindByFilter(ctx context.Context, filter Filter) (listings []*Listing, total int64, err error)
 }
 
 type FavoriteRepository interface {
@@ -16,9 +16,8 @@ type FavoriteRepository interface {
 	FindByUserID(ctx context.Context, userID string) ([]*Favorite, error)
 }
 
-type Filter struct {
-	Query    string
-	MinPrice float64
-	MaxPrice float64
-	Status   ListingStatus
+type Storage interface {
+    Upload(ctx context.Context, fileName string, data []byte) (string, error)
+    // Delete(ctx context.Context, fileKey string) error // Возможно, другие методы
 }
+

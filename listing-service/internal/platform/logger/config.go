@@ -28,7 +28,8 @@ func (c *LoggerConfig) ShouldLog(level string) bool {
 	levels := map[string]int{
 		"debug": 0,
 		"info":  1,
-		"error": 2,
+		"warn":  2, // Добавлено для поддержки warn
+		"error": 3,
 	}
 	return levels[strings.ToLower(level)] >= levels[strings.ToLower(c.Level)]
 }
