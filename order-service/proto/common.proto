@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package common;
+
+option go_package = "github.com/Abdurahmanit/GroupProject/order-service/proto/common;commonpb";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+message AddressProto {
+  string street = 1;
+  string city = 2;
+  string postal_code = 3;
+  string country = 4;
+}
+
+message PaginationRequest {
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message PaginationResponse {
+  int64 total_items = 1;
+  int32 current_page = 2;
+  int32 page_size = 3;
+  int32 total_pages = 4;
+}
+
+message StandardErrorProto {
+  int32 code = 1;
+  string message = 2;
+}
