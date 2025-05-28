@@ -3,7 +3,8 @@ package grpc
 import (
 	"context"
 	"fmt" // Для fmt.Errorf
-
+	"github.com/Abdurahmanit/GroupProject/listing-service/internal/adapter/repository/mongodb"
+	"github.com/Abdurahmanit/GroupProject/listing-service/internal/mailer" // Для middleware.UserIDKey
 	"github.com/Abdurahmanit/GroupProject/listing-service/internal/adapter/grpc/middleware" // Для middleware.UserIDKey
 	"github.com/Abdurahmanit/GroupProject/listing-service/internal/adapter/messaging/nats"
 	"github.com/Abdurahmanit/GroupProject/listing-service/internal/adapter/repository/cache"
@@ -27,6 +28,7 @@ type Handler struct {
 	pb.UnimplementedListingServiceServer
 	listingUsecase  *usecase.ListingUsecase
 	photoUsecase    *usecase.PhotoUsecase
+	userRepo *mongodb.UserRepository
 	favoriteUsecase *usecase.FavoriteUsecase
 	natsPublisher   *nats.Publisher
 	cache           *cache.ListingCache
@@ -36,6 +38,7 @@ type Handler struct {
 func NewHandler(
 	listingRepo domain.ListingRepository,
 	favoriteRepo domain.FavoriteRepository,
+	userRepo *mongodb.UserRepository, // Добавляем UserRepository для получения email
 	storage domain.Storage,
 	natsPublisher *nats.Publisher,
 	cache *cache.ListingCache,
@@ -48,6 +51,7 @@ func NewHandler(
 	return &Handler{
 		listingUsecase:  listingUc,
 		photoUsecase:    photoUc,
+		userRepo:        userRepo, // Сохраняем UserRepository для получения email
 		favoriteUsecase: favoriteUc,
 		natsPublisher:   natsPublisher,
 		cache:           cache,
@@ -120,6 +124,20 @@ func (h *Handler) CreateListing(ctx context.Context, req *pb.CreateListingReques
 		return nil, status.Errorf(codes.Internal, "failed to create listing: %v", err)
 	}
 	span.SetAttributes(attribute.String("created_listing_id", listing.ID))
+
+
+	userEmail, err := h.userRepo.GetEmailByID(ctx, authenticatedUserID)
+    if err != nil {
+        h.logger.Warn("CreateListing: failed to get user email for notification", "user_id", authenticatedUserID, "error", err.Error())
+    } else {
+        // Отправляем email в горутине, чтобы не блокировать обработку
+        go func(email, title string) {
+            if err := mailer.SendListingCreatedEmail(email, title); err != nil {
+                h.logger.Warn("CreateListing: failed to send email notification", "email", email, "error", err.Error())
+            }
+        }(userEmail, req.GetTitle())
+    }
+
 
 	if errCache := h.cache.SetListing(ctx, listing); errCache != nil {
 		h.logger.Warn("CreateListing: SetListing to cache failed", "listing_id", listing.ID, "error", errCache.Error())
