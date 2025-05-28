@@ -37,21 +37,17 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NewsServiceClient interface {
-	// --- News RPCs ---
 	CreateNews(ctx context.Context, in *CreateNewsRequest, opts ...grpc.CallOption) (*CreateNewsResponse, error)
 	GetNews(ctx context.Context, in *GetNewsRequest, opts ...grpc.CallOption) (*GetNewsResponse, error)
 	ListNews(ctx context.Context, in *ListNewsRequest, opts ...grpc.CallOption) (*ListNewsResponse, error)
 	UpdateNews(ctx context.Context, in *UpdateNewsRequest, opts ...grpc.CallOption) (*UpdateNewsResponse, error)
 	DeleteNews(ctx context.Context, in *DeleteNewsRequest, opts ...grpc.CallOption) (*DeleteNewsResponse, error)
-	// --- Comment RPCs ---
 	CreateComment(ctx context.Context, in *CreateCommentRequest, opts ...grpc.CallOption) (*CreateCommentResponse, error)
 	GetCommentsForNews(ctx context.Context, in *GetCommentsForNewsRequest, opts ...grpc.CallOption) (*GetCommentsForNewsResponse, error)
 	DeleteComment(ctx context.Context, in *DeleteCommentRequest, opts ...grpc.CallOption) (*DeleteCommentResponse, error)
-	// --- Like RPCs ---
 	LikeNews(ctx context.Context, in *LikeNewsRequest, opts ...grpc.CallOption) (*LikeNewsResponse, error)
 	UnlikeNews(ctx context.Context, in *UnlikeNewsRequest, opts ...grpc.CallOption) (*UnlikeNewsResponse, error)
 	GetLikesCount(ctx context.Context, in *GetLikesCountRequest, opts ...grpc.CallOption) (*GetLikesCountResponse, error)
-	// Для достижения 12+ эндпоинтов (11 уже есть, добавим один для примера)
 	GetNewsByAuthor(ctx context.Context, in *GetNewsByAuthorRequest, opts ...grpc.CallOption) (*ListNewsResponse, error)
 }
 
@@ -187,21 +183,17 @@ func (c *newsServiceClient) GetNewsByAuthor(ctx context.Context, in *GetNewsByAu
 // All implementations must embed UnimplementedNewsServiceServer
 // for forward compatibility.
 type NewsServiceServer interface {
-	// --- News RPCs ---
 	CreateNews(context.Context, *CreateNewsRequest) (*CreateNewsResponse, error)
 	GetNews(context.Context, *GetNewsRequest) (*GetNewsResponse, error)
 	ListNews(context.Context, *ListNewsRequest) (*ListNewsResponse, error)
 	UpdateNews(context.Context, *UpdateNewsRequest) (*UpdateNewsResponse, error)
 	DeleteNews(context.Context, *DeleteNewsRequest) (*DeleteNewsResponse, error)
-	// --- Comment RPCs ---
 	CreateComment(context.Context, *CreateCommentRequest) (*CreateCommentResponse, error)
 	GetCommentsForNews(context.Context, *GetCommentsForNewsRequest) (*GetCommentsForNewsResponse, error)
 	DeleteComment(context.Context, *DeleteCommentRequest) (*DeleteCommentResponse, error)
-	// --- Like RPCs ---
 	LikeNews(context.Context, *LikeNewsRequest) (*LikeNewsResponse, error)
 	UnlikeNews(context.Context, *UnlikeNewsRequest) (*UnlikeNewsResponse, error)
 	GetLikesCount(context.Context, *GetLikesCountRequest) (*GetLikesCountResponse, error)
-	// Для достижения 12+ эндпоинтов (11 уже есть, добавим один для примера)
 	GetNewsByAuthor(context.Context, *GetNewsByAuthorRequest) (*ListNewsResponse, error)
 	mustEmbedUnimplementedNewsServiceServer()
 }
