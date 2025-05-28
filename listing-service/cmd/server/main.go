@@ -7,7 +7,6 @@ import (
 	"os/signal"
 	"syscall"
 	"time" // Для таймаута при закрытии трейсера
-
 	grpcAdapter "github.com/Abdurahmanit/GroupProject/listing-service/internal/adapter/grpc"
 	"github.com/Abdurahmanit/GroupProject/listing-service/internal/adapter/messaging/nats"
 	"github.com/Abdurahmanit/GroupProject/listing-service/internal/adapter/repository/mongodb"
@@ -17,7 +16,7 @@ import (
 	"github.com/Abdurahmanit/GroupProject/listing-service/internal/platform/logger"   // <--- ПУТЬ К ТВОЕМУ ЛОГГЕРУ
 	"github.com/Abdurahmanit/GroupProject/listing-service/internal/platform/tracer"   // <--- ПУТЬ К ТВОЕМУ ТРЕЙСЕРУ
 	pb "github.com/Abdurahmanit/GroupProject/listing-service/genproto/listing_service"
-
+	"github.com/joho/godotenv" // Для загрузки .env файла
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -41,6 +40,9 @@ func main() {
 		}
 	}()
 
+	if err := godotenv.Load(); err != nil {
+		appLogger.Error("Error loading .env file",err)
+	}
 
 	// Load configuration
 	cfg, err := config.Load() // config.Load может использовать os.Getenv, которые ты настраиваешь
@@ -64,10 +66,11 @@ func main() {
 			appLogger.Info("Disconnected from MongoDB successfully.")
 		}
 	}()
-	db := mongoClient.Database("bike_store")
+	db := mongoClient.Database("bicycle_shop")
 	appLogger.Info("Successfully connected to MongoDB.")
 
 	// Initialize repositories
+	userRepo := mongodb.NewUserRepository(db, appLogger)
 	listingRepo := mongodb.NewListingRepository(db, appLogger)     // Передай логгер, если репозиторий его использует
 	favoriteRepo := mongodb.NewFavoriteRepository(db, appLogger) // Аналогично
 	appLogger.Info("Repositories initialized.")
@@ -122,7 +125,7 @@ func main() {
 	grpcSrv, cleanup := grpcAdapter.NewGRPCServer(appLogger, cfg.JWTSecret) // <--- ПЕРЕДАЕМ ЛОГГЕР В GRPC SERVER ADAPTER
 
 	// Передаем appLogger в Handler
-	handler := grpcAdapter.NewHandler(listingRepo, favoriteRepo, storageClient, natsPublisher, listingCache, appLogger) // <--- ЛОГГЕР ПЕРЕДАН В GRPC HANDLER
+	handler := grpcAdapter.NewHandler(listingRepo, favoriteRepo,userRepo, storageClient, natsPublisher, listingCache, appLogger) // <--- ЛОГГЕР ПЕРЕДАН В GRPC HANDLER
 	pb.RegisterListingServiceServer(grpcSrv, handler)
 
 	// Graceful Shutdown
