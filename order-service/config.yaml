@@ -1,0 +1,25 @@
+env: "local"
+
+grpc_server:
+  port: "50054"
+  timeout: 5s
+  max_connection_idle: 15m
+  timeout_graceful_shutdown: 15s
+
+mongo:
+  uri: "mongodb://localhost:27017"
+  user: ""
+  password: ""
+  database: "order_service_db"
+
+redis:
+  addr: "localhost:6379"
+  password: ""
+  db: 0
+
+nats:
+  url: "nats://localhost:4222"
+
+logger:
+  level: "debug"
+  encoding: "json"

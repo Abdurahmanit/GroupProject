@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package cart;
+
+option go_package = "github.com/Abdurahmanit/GroupProject/order-service/proto/cart;cartpb";
+
+message CartItemProto {
+  string product_id = 1;
+  int32 quantity = 2;
+  string product_name = 3;
+  double price_per_unit = 4;
+  double total_price = 5;
+}
+
+message CartProto {
+  string user_id = 1;
+  repeated CartItemProto items = 2;
+  double total_amount = 3;
+}

@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package order;
+
+option go_package = "github.com/Abdurahmanit/GroupProject/order-service/proto/order;orderpb";
+
+import "google/protobuf/timestamp.proto";
+import "common.proto"; // Убедитесь, что protoc сможет найти этот файл
+
+enum OrderStatusProto {
+  ORDER_STATUS_PROTO_UNSPECIFIED = 0;
+  PENDING_PAYMENT = 1;
+  PAID = 2;
+  PROCESSING = 3;
+  SHIPPED = 4;
+  DELIVERED = 5;
+  CANCELLED = 6;
+  FAILED = 7;
+}
+
+message OrderItemProto {
+  string product_id = 1;
+  string product_name = 2;
+  int32 quantity = 3;
+  double price_per_unit = 4;
+  double total_price = 5;
+}
+
+message PaymentDetailsProto {
+  string payment_method_id = 1;
+  string transaction_id = 2;
+  string payment_status = 3;
+}
+
+message OrderProto {
+  string id = 1;
+  string user_id = 2;
+  repeated OrderItemProto items = 3;
+  double total_amount = 4;
+  OrderStatusProto status = 5;
+  common.AddressProto shipping_address = 6;
+  common.AddressProto billing_address = 7;
+  PaymentDetailsProto payment_details = 8;
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}

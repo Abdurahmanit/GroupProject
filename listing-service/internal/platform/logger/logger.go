@@ -37,12 +37,20 @@ func (l *Logger) Info(msg string, keysAndValues ...interface{}) {
 	l.log("INFO", msg, keysAndValues...)
 }
 
+func (l *Logger) Warn(msg string, keysAndValues ...interface{}) { // <--- ДОБАВЬ ЭТОТ МЕТОД
+	if !l.config.ShouldLog("warn") { // <--- Добавь "warn" в уровни, если нужно
+		return
+	}
+	l.log("WARN", msg, keysAndValues...)
+}
+
 func (l *Logger) Error(msg string, keysAndValues ...interface{}) {
 	if !l.config.ShouldLog("error") {
 		return
 	}
 	l.log("ERROR", msg, keysAndValues...)
 }
+
 
 func (l *Logger) Debug(msg string, keysAndValues ...interface{}) {
 	if !l.config.ShouldLog("debug") {

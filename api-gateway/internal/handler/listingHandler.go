@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-
+	"io"
 	"github.com/Abdurahmanit/GroupProject/listing-service/genproto/listing_service"
 	"github.com/go-chi/chi/v5" // Возвращаем импорт chi
 	"go.uber.org/zap"
@@ -188,21 +188,37 @@ func (h *ListingHandler) HandleSearchListings(w http.ResponseWriter, r *http.Req
 }
 
 // HandleUploadPhoto обрабатывает загрузку фотографии
-func (h *ListingHandler) HandleUploadPhoto(w http.ResponseWriter, r *http.Request) { // Сигнатура для chi
-	id := chi.URLParam(r, "id") // Используем chi.URLParam
-	var req listing_service.UploadPhotoRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.Error("Invalid request body for UploadPhoto", zap.String("listing_id", id), zap.Error(err))
-		http.Error(w, status.Errorf(codes.InvalidArgument, "Invalid request body: %v", err).Error(), http.StatusBadRequest)
+func (h *ListingHandler) HandleUploadPhoto(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	// Ограничение размера файла (например, 10 МБ)
+	r.ParseMultipartForm(10 << 20) // 10MB
+
+	file, handler, err := r.FormFile("photo_file") // ключ — "photo_file"
+	if err != nil {
+		http.Error(w, "Failed to get uploaded file: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	req.ListingId = id
+	defer file.Close()
+
+	// Прочитаем содержимое файла
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		http.Error(w, "Failed to read file: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Соберем gRPC-запрос
+	req := &listing_service.UploadPhotoRequest{
+		ListingId: id,
+		FileName:  handler.Filename,
+		Data:  fileBytes,
+	}
 
 	ctx := withAuth(r.Context(), r)
 	client := listing_service.NewListingServiceClient(h.client)
-	resp, err := client.UploadPhoto(ctx, &req)
+	resp, err := client.UploadPhoto(ctx, req)
 	if err != nil {
-		h.logger.Error("Failed to upload photo via gRPC", zap.String("listing_id", id), zap.Error(err))
 		st, ok := status.FromError(err)
 		if ok {
 			http.Error(w, st.Message(), http.StatusInternalServerError)
@@ -214,11 +230,9 @@ func (h *ListingHandler) HandleUploadPhoto(w http.ResponseWriter, r *http.Reques
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		h.logger.Error("Failed to encode UploadPhoto response", zap.String("listing_id", id), zap.Error(err))
-		http.Error(w, status.Errorf(codes.Internal, "Failed to encode response: %v", err).Error(), http.StatusInternalServerError)
-	}
+	json.NewEncoder(w).Encode(resp)
 }
+
 
 // HandleGetListingStatus обрабатывает получение статуса объявления
 func (h *ListingHandler) HandleGetListingStatus(w http.ResponseWriter, r *http.Request) { // Сигнатура для chi

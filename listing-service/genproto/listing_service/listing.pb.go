@@ -9,6 +9,7 @@ package listing_service
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -59,9 +60,11 @@ func (*Empty) Descriptor() ([]byte, []int) {
 
 type CreateListingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Title         string                 `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
-	Description   string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
-	Price         float64                `protobuf:"fixed64,3,opt,name=price,proto3" json:"price,omitempty"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`             // <--- ДОБАВЛЕНО (ID пользователя, создающего объявление)
+	CategoryId    string                 `protobuf:"bytes,2,opt,name=category_id,json=categoryId,proto3" json:"category_id,omitempty"` // <--- ДОБАВЛЕНО
+	Title         string                 `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
+	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`
+	Price         float64                `protobuf:"fixed64,5,opt,name=price,proto3" json:"price,omitempty"` // repeated string photos = 6; // Если фото можно загружать сразу при создании
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -96,6 +99,20 @@ func (*CreateListingRequest) Descriptor() ([]byte, []int) {
 	return file_api_proto_listing_listing_proto_rawDescGZIP(), []int{1}
 }
 
+func (x *CreateListingRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *CreateListingRequest) GetCategoryId() string {
+	if x != nil {
+		return x.CategoryId
+	}
+	return ""
+}
+
 func (x *CreateListingRequest) GetTitle() string {
 	if x != nil {
 		return x.Title
@@ -120,10 +137,12 @@ func (x *CreateListingRequest) GetPrice() float64 {
 type UpdateListingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	Price         float64                `protobuf:"fixed64,4,opt,name=price,proto3" json:"price,omitempty"`
-	Status        string                 `protobuf:"bytes,5,opt,name=status,proto3" json:"status,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`             // <--- ДОБАВЛЕНО (ID пользователя, пытающегося обновить)
+	CategoryId    string                 `protobuf:"bytes,3,opt,name=category_id,json=categoryId,proto3" json:"category_id,omitempty"` // <--- ДОБАВЛЕНО (Если категорию можно менять)
+	Title         string                 `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	Description   string                 `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
+	Price         float64                `protobuf:"fixed64,6,opt,name=price,proto3" json:"price,omitempty"`
+	Status        string                 `protobuf:"bytes,7,opt,name=status,proto3" json:"status,omitempty"` // Рассмотри использование enum для статуса
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -165,6 +184,20 @@ func (x *UpdateListingRequest) GetId() string {
 	return ""
 }
 
+func (x *UpdateListingRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *UpdateListingRequest) GetCategoryId() string {
+	if x != nil {
+		return x.CategoryId
+	}
+	return ""
+}
+
 func (x *UpdateListingRequest) GetTitle() string {
 	if x != nil {
 		return x.Title
@@ -196,6 +229,7 @@ func (x *UpdateListingRequest) GetStatus() string {
 type DeleteListingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // <--- ДОБАВЛЕНО (ID пользователя, пытающегося удалить)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -233,6 +267,13 @@ func (*DeleteListingRequest) Descriptor() ([]byte, []int) {
 func (x *DeleteListingRequest) GetId() string {
 	if x != nil {
 		return x.Id
+	}
+	return ""
+}
+
+func (x *DeleteListingRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
 	}
 	return ""
 }
@@ -284,13 +325,15 @@ func (x *GetListingRequest) GetId() string {
 type ListingResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
-	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
-	Price         float64                `protobuf:"fixed64,4,opt,name=price,proto3" json:"price,omitempty"`
-	Status        string                 `protobuf:"bytes,5,opt,name=status,proto3" json:"status,omitempty"`
-	Photos        []string               `protobuf:"bytes,6,rep,name=photos,proto3" json:"photos,omitempty"`
-	CreatedAt     string                 `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt     string                 `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`             // <--- ДОБАВЛЕНО
+	CategoryId    string                 `protobuf:"bytes,3,opt,name=category_id,json=categoryId,proto3" json:"category_id,omitempty"` // <--- ДОБАВЛЕНО
+	Title         string                 `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	Description   string                 `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
+	Price         float64                `protobuf:"fixed64,6,opt,name=price,proto3" json:"price,omitempty"`
+	Status        string                 `protobuf:"bytes,7,opt,name=status,proto3" json:"status,omitempty"` // Рассмотри использование enum для статуса
+	Photos        []string               `protobuf:"bytes,8,rep,name=photos,proto3" json:"photos,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`  // <--- ИЗМЕНЕНО НА Timestamp
+	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"` // <--- ИЗМЕНЕНО НА Timestamp
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -332,6 +375,20 @@ func (x *ListingResponse) GetId() string {
 	return ""
 }
 
+func (x *ListingResponse) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *ListingResponse) GetCategoryId() string {
+	if x != nil {
+		return x.CategoryId
+	}
+	return ""
+}
+
 func (x *ListingResponse) GetTitle() string {
 	if x != nil {
 		return x.Title
@@ -367,18 +424,18 @@ func (x *ListingResponse) GetPhotos() []string {
 	return nil
 }
 
-func (x *ListingResponse) GetCreatedAt() string {
+func (x *ListingResponse) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedAt
 	}
-	return ""
+	return nil
 }
 
-func (x *ListingResponse) GetUpdatedAt() string {
+func (x *ListingResponse) GetUpdatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.UpdatedAt
 	}
-	return ""
+	return nil
 }
 
 type SearchListingsRequest struct {
@@ -386,7 +443,13 @@ type SearchListingsRequest struct {
 	Query         string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
 	MinPrice      float64                `protobuf:"fixed64,2,opt,name=min_price,json=minPrice,proto3" json:"min_price,omitempty"`
 	MaxPrice      float64                `protobuf:"fixed64,3,opt,name=max_price,json=maxPrice,proto3" json:"max_price,omitempty"`
-	Status        string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`
+	Status        string                 `protobuf:"bytes,4,opt,name=status,proto3" json:"status,omitempty"`                           // Рассмотри использование enum для статуса
+	CategoryId    string                 `protobuf:"bytes,5,opt,name=category_id,json=categoryId,proto3" json:"category_id,omitempty"` // <--- ДОБАВЛЕНО (для фильтрации по категории)
+	UserId        string                 `protobuf:"bytes,6,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`             // <--- ДОБАВЛЕНО (для фильтрации по объявлениям пользователя)
+	Page          int32                  `protobuf:"varint,7,opt,name=page,proto3" json:"page,omitempty"`                              // <--- ДОБАВЛЕНО (для пагинации)
+	Limit         int32                  `protobuf:"varint,8,opt,name=limit,proto3" json:"limit,omitempty"`                            // <--- ДОБАВЛЕНО (для пагинации)
+	SortBy        string                 `protobuf:"bytes,9,opt,name=sort_by,json=sortBy,proto3" json:"sort_by,omitempty"`             // <--- ДОБАВЛЕНО (например, "price", "created_at")
+	SortOrder     string                 `protobuf:"bytes,10,opt,name=sort_order,json=sortOrder,proto3" json:"sort_order,omitempty"`   // <--- ДОБАВЛЕНО (например, "asc", "desc")
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -449,9 +512,54 @@ func (x *SearchListingsRequest) GetStatus() string {
 	return ""
 }
 
+func (x *SearchListingsRequest) GetCategoryId() string {
+	if x != nil {
+		return x.CategoryId
+	}
+	return ""
+}
+
+func (x *SearchListingsRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *SearchListingsRequest) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *SearchListingsRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *SearchListingsRequest) GetSortBy() string {
+	if x != nil {
+		return x.SortBy
+	}
+	return ""
+}
+
+func (x *SearchListingsRequest) GetSortOrder() string {
+	if x != nil {
+		return x.SortOrder
+	}
+	return ""
+}
+
 type SearchListingsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Listings      []*ListingResponse     `protobuf:"bytes,1,rep,name=listings,proto3" json:"listings,omitempty"`
+	Total         int64                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"` // <--- ДОБАВЛЕНО (общее количество найденных записей)
+	Page          int32                  `protobuf:"varint,3,opt,name=page,proto3" json:"page,omitempty"`   // <--- ДОБАВЛЕНО (текущая страница)
+	Limit         int32                  `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"` // <--- ДОБАВЛЕНО (лимит на странице)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -493,11 +601,33 @@ func (x *SearchListingsResponse) GetListings() []*ListingResponse {
 	return nil
 }
 
+func (x *SearchListingsResponse) GetTotal() int64 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+func (x *SearchListingsResponse) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *SearchListingsResponse) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
 type UploadPhotoRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ListingId     string                 `protobuf:"bytes,1,opt,name=listing_id,json=listingId,proto3" json:"listing_id,omitempty"`
-	FileName      string                 `protobuf:"bytes,2,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
-	Data          []byte                 `protobuf:"bytes,3,opt,name=data,proto3" json:"data,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // <--- ДОБАВЛЕНО (ID пользователя, загружающего фото)
+	FileName      string                 `protobuf:"bytes,3,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
+	Data          []byte                 `protobuf:"bytes,4,opt,name=data,proto3" json:"data,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -539,6 +669,13 @@ func (x *UploadPhotoRequest) GetListingId() string {
 	return ""
 }
 
+func (x *UploadPhotoRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
 func (x *UploadPhotoRequest) GetFileName() string {
 	if x != nil {
 		return x.FileName
@@ -555,7 +692,7 @@ func (x *UploadPhotoRequest) GetData() []byte {
 
 type UploadPhotoResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	PhotoUrl      string                 `protobuf:"bytes,1,opt,name=photo_url,json=photoUrl,proto3" json:"photo_url,omitempty"` // <--- Переименовано для ясности (было url)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -590,16 +727,20 @@ func (*UploadPhotoResponse) Descriptor() ([]byte, []int) {
 	return file_api_proto_listing_listing_proto_rawDescGZIP(), []int{9}
 }
 
-func (x *UploadPhotoResponse) GetUrl() string {
+func (x *UploadPhotoResponse) GetPhotoUrl() string {
 	if x != nil {
-		return x.Url
+		return x.PhotoUrl
 	}
 	return ""
 }
 
+// ListingStatusResponse и PhotoURLsResponse могут быть избыточны,
+// если GetListingByID возвращает полный ListingResponse.
+// Если они остаются, стоит добавить listing_id в ответ для контекста.
 type ListingStatusResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Status        string                 `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	ListingId     string                 `protobuf:"bytes,1,opt,name=listing_id,json=listingId,proto3" json:"listing_id,omitempty"` // <--- ДОБАВЛЕНО для контекста
+	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -632,6 +773,13 @@ func (x *ListingStatusResponse) ProtoReflect() protoreflect.Message {
 // Deprecated: Use ListingStatusResponse.ProtoReflect.Descriptor instead.
 func (*ListingStatusResponse) Descriptor() ([]byte, []int) {
 	return file_api_proto_listing_listing_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ListingStatusResponse) GetListingId() string {
+	if x != nil {
+		return x.ListingId
+	}
+	return ""
 }
 
 func (x *ListingStatusResponse) GetStatus() string {
@@ -835,7 +983,8 @@ func (x *GetFavoritesResponse) GetListingIds() []string {
 
 type PhotoURLsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Urls          []string               `protobuf:"bytes,1,rep,name=urls,proto3" json:"urls,omitempty"`
+	ListingId     string                 `protobuf:"bytes,1,opt,name=listing_id,json=listingId,proto3" json:"listing_id,omitempty"` // <--- ДОБАВЛЕНО для контекста
+	Urls          []string               `protobuf:"bytes,2,rep,name=urls,proto3" json:"urls,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -870,6 +1019,13 @@ func (*PhotoURLsResponse) Descriptor() ([]byte, []int) {
 	return file_api_proto_listing_listing_proto_rawDescGZIP(), []int{15}
 }
 
+func (x *PhotoURLsResponse) GetListingId() string {
+	if x != nil {
+		return x.ListingId
+	}
+	return ""
+}
+
 func (x *PhotoURLsResponse) GetUrls() []string {
 	if x != nil {
 		return x.Urls
@@ -880,7 +1036,8 @@ func (x *PhotoURLsResponse) GetUrls() []string {
 type UpdateListingStatusRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Status        string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // <--- ДОБАВЛЕНО (ID пользователя, изменяющего статус)
+	Status        string                 `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`               // Рассмотри использование enum для статуса
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -922,6 +1079,13 @@ func (x *UpdateListingStatusRequest) GetId() string {
 	return ""
 }
 
+func (x *UpdateListingStatusRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
 func (x *UpdateListingStatusRequest) GetStatus() string {
 	if x != nil {
 		return x.Status
@@ -933,49 +1097,75 @@ var File_api_proto_listing_listing_proto protoreflect.FileDescriptor
 
 const file_api_proto_listing_listing_proto_rawDesc = "" +
 	"\n" +
-	"\x1fapi/proto/listing/listing.proto\x12\alisting\"\a\n" +
-	"\x05Empty\"d\n" +
-	"\x14CreateListingRequest\x12\x14\n" +
-	"\x05title\x18\x01 \x01(\tR\x05title\x12 \n" +
-	"\vdescription\x18\x02 \x01(\tR\vdescription\x12\x14\n" +
-	"\x05price\x18\x03 \x01(\x01R\x05price\"\x8c\x01\n" +
+	"\x1fapi/proto/listing/listing.proto\x12\alisting\x1a\x1fgoogle/protobuf/timestamp.proto\"\a\n" +
+	"\x05Empty\"\x9e\x01\n" +
+	"\x14CreateListingRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1f\n" +
+	"\vcategory_id\x18\x02 \x01(\tR\n" +
+	"categoryId\x12\x14\n" +
+	"\x05title\x18\x03 \x01(\tR\x05title\x12 \n" +
+	"\vdescription\x18\x04 \x01(\tR\vdescription\x12\x14\n" +
+	"\x05price\x18\x05 \x01(\x01R\x05price\"\xc6\x01\n" +
 	"\x14UpdateListingRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
-	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x14\n" +
-	"\x05price\x18\x04 \x01(\x01R\x05price\x12\x16\n" +
-	"\x06status\x18\x05 \x01(\tR\x06status\"&\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x1f\n" +
+	"\vcategory_id\x18\x03 \x01(\tR\n" +
+	"categoryId\x12\x14\n" +
+	"\x05title\x18\x04 \x01(\tR\x05title\x12 \n" +
+	"\vdescription\x18\x05 \x01(\tR\vdescription\x12\x14\n" +
+	"\x05price\x18\x06 \x01(\x01R\x05price\x12\x16\n" +
+	"\x06status\x18\a \x01(\tR\x06status\"?\n" +
 	"\x14DeleteListingRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"#\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\"#\n" +
 	"\x11GetListingRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\xdd\x01\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\xcf\x02\n" +
 	"\x0fListingResponse\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
-	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
-	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x14\n" +
-	"\x05price\x18\x04 \x01(\x01R\x05price\x12\x16\n" +
-	"\x06status\x18\x05 \x01(\tR\x06status\x12\x16\n" +
-	"\x06photos\x18\x06 \x03(\tR\x06photos\x12\x1d\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x1f\n" +
+	"\vcategory_id\x18\x03 \x01(\tR\n" +
+	"categoryId\x12\x14\n" +
+	"\x05title\x18\x04 \x01(\tR\x05title\x12 \n" +
+	"\vdescription\x18\x05 \x01(\tR\vdescription\x12\x14\n" +
+	"\x05price\x18\x06 \x01(\x01R\x05price\x12\x16\n" +
+	"\x06status\x18\a \x01(\tR\x06status\x12\x16\n" +
+	"\x06photos\x18\b \x03(\tR\x06photos\x129\n" +
 	"\n" +
-	"created_at\x18\a \x01(\tR\tcreatedAt\x12\x1d\n" +
+	"created_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"updated_at\x18\b \x01(\tR\tupdatedAt\"\x7f\n" +
+	"updated_at\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\x9b\x02\n" +
 	"\x15SearchListingsRequest\x12\x14\n" +
 	"\x05query\x18\x01 \x01(\tR\x05query\x12\x1b\n" +
 	"\tmin_price\x18\x02 \x01(\x01R\bminPrice\x12\x1b\n" +
 	"\tmax_price\x18\x03 \x01(\x01R\bmaxPrice\x12\x16\n" +
-	"\x06status\x18\x04 \x01(\tR\x06status\"N\n" +
+	"\x06status\x18\x04 \x01(\tR\x06status\x12\x1f\n" +
+	"\vcategory_id\x18\x05 \x01(\tR\n" +
+	"categoryId\x12\x17\n" +
+	"\auser_id\x18\x06 \x01(\tR\x06userId\x12\x12\n" +
+	"\x04page\x18\a \x01(\x05R\x04page\x12\x14\n" +
+	"\x05limit\x18\b \x01(\x05R\x05limit\x12\x17\n" +
+	"\asort_by\x18\t \x01(\tR\x06sortBy\x12\x1d\n" +
+	"\n" +
+	"sort_order\x18\n" +
+	" \x01(\tR\tsortOrder\"\x8e\x01\n" +
 	"\x16SearchListingsResponse\x124\n" +
-	"\blistings\x18\x01 \x03(\v2\x18.listing.ListingResponseR\blistings\"d\n" +
+	"\blistings\x18\x01 \x03(\v2\x18.listing.ListingResponseR\blistings\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x03R\x05total\x12\x12\n" +
+	"\x04page\x18\x03 \x01(\x05R\x04page\x12\x14\n" +
+	"\x05limit\x18\x04 \x01(\x05R\x05limit\"}\n" +
 	"\x12UploadPhotoRequest\x12\x1d\n" +
 	"\n" +
-	"listing_id\x18\x01 \x01(\tR\tlistingId\x12\x1b\n" +
-	"\tfile_name\x18\x02 \x01(\tR\bfileName\x12\x12\n" +
-	"\x04data\x18\x03 \x01(\fR\x04data\"'\n" +
-	"\x13UploadPhotoResponse\x12\x10\n" +
-	"\x03url\x18\x01 \x01(\tR\x03url\"/\n" +
-	"\x15ListingStatusResponse\x12\x16\n" +
-	"\x06status\x18\x01 \x01(\tR\x06status\"L\n" +
+	"listing_id\x18\x01 \x01(\tR\tlistingId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x1b\n" +
+	"\tfile_name\x18\x03 \x01(\tR\bfileName\x12\x12\n" +
+	"\x04data\x18\x04 \x01(\fR\x04data\"2\n" +
+	"\x13UploadPhotoResponse\x12\x1b\n" +
+	"\tphoto_url\x18\x01 \x01(\tR\bphotoUrl\"N\n" +
+	"\x15ListingStatusResponse\x12\x1d\n" +
+	"\n" +
+	"listing_id\x18\x01 \x01(\tR\tlistingId\x12\x16\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\"L\n" +
 	"\x12AddFavoriteRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1d\n" +
 	"\n" +
@@ -988,12 +1178,15 @@ const file_api_proto_listing_listing_proto_rawDesc = "" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"7\n" +
 	"\x14GetFavoritesResponse\x12\x1f\n" +
 	"\vlisting_ids\x18\x01 \x03(\tR\n" +
-	"listingIds\"'\n" +
-	"\x11PhotoURLsResponse\x12\x12\n" +
-	"\x04urls\x18\x01 \x03(\tR\x04urls\"D\n" +
+	"listingIds\"F\n" +
+	"\x11PhotoURLsResponse\x12\x1d\n" +
+	"\n" +
+	"listing_id\x18\x01 \x01(\tR\tlistingId\x12\x12\n" +
+	"\x04urls\x18\x02 \x03(\tR\x04urls\"]\n" +
 	"\x1aUpdateListingStatusRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
-	"\x06status\x18\x02 \x01(\tR\x06status2\x82\a\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x16\n" +
+	"\x06status\x18\x03 \x01(\tR\x06status2\x82\a\n" +
 	"\x0eListingService\x12H\n" +
 	"\rCreateListing\x12\x1d.listing.CreateListingRequest\x1a\x18.listing.ListingResponse\x12H\n" +
 	"\rUpdateListing\x12\x1d.listing.UpdateListingRequest\x1a\x18.listing.ListingResponse\x12>\n" +
@@ -1006,7 +1199,7 @@ const file_api_proto_listing_listing_proto_rawDesc = "" +
 	"\x0eRemoveFavorite\x12\x1e.listing.RemoveFavoriteRequest\x1a\x0e.listing.Empty\x12K\n" +
 	"\fGetFavorites\x12\x1c.listing.GetFavoritesRequest\x1a\x1d.listing.GetFavoritesResponse\x12F\n" +
 	"\fGetPhotoURLs\x12\x1a.listing.GetListingRequest\x1a\x1a.listing.PhotoURLsResponse\x12T\n" +
-	"\x13UpdateListingStatus\x12#.listing.UpdateListingStatusRequest\x1a\x18.listing.ListingResponseBOZMgithub.com/Abdurahmanit/GroupProject/listing-service/genproto/listing_serviceb\x06proto3"
+	"\x13UpdateListingStatus\x12#.listing.UpdateListingStatusRequest\x1a\x18.listing.ListingResponseB\x1aZ\x18genproto/listing_serviceb\x06proto3"
 
 var (
 	file_api_proto_listing_listing_proto_rawDescOnce sync.Once
@@ -1039,38 +1232,41 @@ var file_api_proto_listing_listing_proto_goTypes = []any{
 	(*GetFavoritesResponse)(nil),       // 14: listing.GetFavoritesResponse
 	(*PhotoURLsResponse)(nil),          // 15: listing.PhotoURLsResponse
 	(*UpdateListingStatusRequest)(nil), // 16: listing.UpdateListingStatusRequest
+	(*timestamppb.Timestamp)(nil),      // 17: google.protobuf.Timestamp
 }
 var file_api_proto_listing_listing_proto_depIdxs = []int32{
-	5,  // 0: listing.SearchListingsResponse.listings:type_name -> listing.ListingResponse
-	1,  // 1: listing.ListingService.CreateListing:input_type -> listing.CreateListingRequest
-	2,  // 2: listing.ListingService.UpdateListing:input_type -> listing.UpdateListingRequest
-	3,  // 3: listing.ListingService.DeleteListing:input_type -> listing.DeleteListingRequest
-	4,  // 4: listing.ListingService.GetListingByID:input_type -> listing.GetListingRequest
-	6,  // 5: listing.ListingService.SearchListings:input_type -> listing.SearchListingsRequest
-	8,  // 6: listing.ListingService.UploadPhoto:input_type -> listing.UploadPhotoRequest
-	4,  // 7: listing.ListingService.GetListingStatus:input_type -> listing.GetListingRequest
-	11, // 8: listing.ListingService.AddFavorite:input_type -> listing.AddFavoriteRequest
-	12, // 9: listing.ListingService.RemoveFavorite:input_type -> listing.RemoveFavoriteRequest
-	13, // 10: listing.ListingService.GetFavorites:input_type -> listing.GetFavoritesRequest
-	4,  // 11: listing.ListingService.GetPhotoURLs:input_type -> listing.GetListingRequest
-	16, // 12: listing.ListingService.UpdateListingStatus:input_type -> listing.UpdateListingStatusRequest
-	5,  // 13: listing.ListingService.CreateListing:output_type -> listing.ListingResponse
-	5,  // 14: listing.ListingService.UpdateListing:output_type -> listing.ListingResponse
-	0,  // 15: listing.ListingService.DeleteListing:output_type -> listing.Empty
-	5,  // 16: listing.ListingService.GetListingByID:output_type -> listing.ListingResponse
-	7,  // 17: listing.ListingService.SearchListings:output_type -> listing.SearchListingsResponse
-	9,  // 18: listing.ListingService.UploadPhoto:output_type -> listing.UploadPhotoResponse
-	10, // 19: listing.ListingService.GetListingStatus:output_type -> listing.ListingStatusResponse
-	0,  // 20: listing.ListingService.AddFavorite:output_type -> listing.Empty
-	0,  // 21: listing.ListingService.RemoveFavorite:output_type -> listing.Empty
-	14, // 22: listing.ListingService.GetFavorites:output_type -> listing.GetFavoritesResponse
-	15, // 23: listing.ListingService.GetPhotoURLs:output_type -> listing.PhotoURLsResponse
-	5,  // 24: listing.ListingService.UpdateListingStatus:output_type -> listing.ListingResponse
-	13, // [13:25] is the sub-list for method output_type
-	1,  // [1:13] is the sub-list for method input_type
-	1,  // [1:1] is the sub-list for extension type_name
-	1,  // [1:1] is the sub-list for extension extendee
-	0,  // [0:1] is the sub-list for field type_name
+	17, // 0: listing.ListingResponse.created_at:type_name -> google.protobuf.Timestamp
+	17, // 1: listing.ListingResponse.updated_at:type_name -> google.protobuf.Timestamp
+	5,  // 2: listing.SearchListingsResponse.listings:type_name -> listing.ListingResponse
+	1,  // 3: listing.ListingService.CreateListing:input_type -> listing.CreateListingRequest
+	2,  // 4: listing.ListingService.UpdateListing:input_type -> listing.UpdateListingRequest
+	3,  // 5: listing.ListingService.DeleteListing:input_type -> listing.DeleteListingRequest
+	4,  // 6: listing.ListingService.GetListingByID:input_type -> listing.GetListingRequest
+	6,  // 7: listing.ListingService.SearchListings:input_type -> listing.SearchListingsRequest
+	8,  // 8: listing.ListingService.UploadPhoto:input_type -> listing.UploadPhotoRequest
+	4,  // 9: listing.ListingService.GetListingStatus:input_type -> listing.GetListingRequest
+	11, // 10: listing.ListingService.AddFavorite:input_type -> listing.AddFavoriteRequest
+	12, // 11: listing.ListingService.RemoveFavorite:input_type -> listing.RemoveFavoriteRequest
+	13, // 12: listing.ListingService.GetFavorites:input_type -> listing.GetFavoritesRequest
+	4,  // 13: listing.ListingService.GetPhotoURLs:input_type -> listing.GetListingRequest
+	16, // 14: listing.ListingService.UpdateListingStatus:input_type -> listing.UpdateListingStatusRequest
+	5,  // 15: listing.ListingService.CreateListing:output_type -> listing.ListingResponse
+	5,  // 16: listing.ListingService.UpdateListing:output_type -> listing.ListingResponse
+	0,  // 17: listing.ListingService.DeleteListing:output_type -> listing.Empty
+	5,  // 18: listing.ListingService.GetListingByID:output_type -> listing.ListingResponse
+	7,  // 19: listing.ListingService.SearchListings:output_type -> listing.SearchListingsResponse
+	9,  // 20: listing.ListingService.UploadPhoto:output_type -> listing.UploadPhotoResponse
+	10, // 21: listing.ListingService.GetListingStatus:output_type -> listing.ListingStatusResponse
+	0,  // 22: listing.ListingService.AddFavorite:output_type -> listing.Empty
+	0,  // 23: listing.ListingService.RemoveFavorite:output_type -> listing.Empty
+	14, // 24: listing.ListingService.GetFavorites:output_type -> listing.GetFavoritesResponse
+	15, // 25: listing.ListingService.GetPhotoURLs:output_type -> listing.PhotoURLsResponse
+	5,  // 26: listing.ListingService.UpdateListingStatus:output_type -> listing.ListingResponse
+	15, // [15:27] is the sub-list for method output_type
+	3,  // [3:15] is the sub-list for method input_type
+	3,  // [3:3] is the sub-list for extension type_name
+	3,  // [3:3] is the sub-list for extension extendee
+	0,  // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_api_proto_listing_listing_proto_init() }

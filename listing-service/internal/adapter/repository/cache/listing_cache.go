@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"time"
-
+	"log"
 	"github.com/redis/go-redis/v9"
 	"github.com/Abdurahmanit/GroupProject/listing-service/internal/listing/domain"
 )
@@ -49,4 +49,11 @@ func (c *ListingCache) SetListing(ctx context.Context, listing *domain.Listing) 
 
 func (c *ListingCache) DeleteListing(ctx context.Context, id string) error {
 	return c.client.Del(ctx, "listing:"+id).Err()
+}
+
+func (c *ListingCache) CloseClient(ctx context.Context) error {
+    // Для go-redis v9, client.Close() закрывает все соединения в пуле.
+    // Передача ctx здесь больше для консистентности, Close() в v9 не принимает context.
+    log.Println("Closing Redis client...")
+    return c.client.Close()
 }

@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+package service;
+
+option go_package = "github.com/Abdurahmanit/GroupProject/order-service/proto/service;servicepb";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "common.proto";
+import "cart_messages.proto";
+import "order_messages.proto";
+
+service OrderService {
+  rpc AddItemToCart(AddItemToCartRequest) returns (cart.CartProto);
+  rpc UpdateCartItemQuantity(UpdateCartItemQuantityRequest) returns (cart.CartProto);
+  rpc RemoveItemFromCart(RemoveItemFromCartRequest) returns (cart.CartProto);
+  rpc GetCart(GetCartRequest) returns (cart.CartProto);
+  rpc ClearCart(ClearCartRequest) returns (google.protobuf.Empty);
+
+  rpc PlaceOrder(PlaceOrderRequest) returns (order.OrderProto);
+  rpc GetOrder(GetOrderRequest) returns (order.OrderProto);
+  rpc ListUserOrders(ListUserOrdersRequest) returns (ListUserOrdersResponse);
+  rpc CancelOrder(CancelOrderRequest) returns (order.OrderProto);
+
+  rpc UpdateOrderStatus(UpdateOrderStatusRequest) returns (order.OrderProto);
+  rpc ListAllOrders(ListAllOrdersAdminRequest) returns (ListAllOrdersAdminResponse);
+
+  rpc GenerateOrderReceipt(GenerateOrderReceiptRequest) returns (GenerateOrderReceiptResponse);
+}
+
+message AddItemToCartRequest {
+  string user_id = 1;
+  string product_id = 2;
+  int32 quantity = 3;
+}
+
+message UpdateCartItemQuantityRequest {
+  string user_id = 1;
+  string product_id = 2;
+  int32 new_quantity = 3;
+}
+
+message RemoveItemFromCartRequest {
+  string user_id = 1;
+  string product_id = 2;
+}
+
+message GetCartRequest {
+  string user_id = 1;
+}
+
+message ClearCartRequest {
+  string user_id = 1;
+}
+
+message PlaceOrderRequest {
+  string user_id = 1;
+  common.AddressProto shipping_address = 2;
+  common.AddressProto billing_address = 3;
+}
+
+message GetOrderRequest {
+  string order_id = 1;
+}
+
+message ListUserOrdersRequest {
+  string user_id = 1;
+  common.PaginationRequest pagination = 2;
+}
+
+message ListUserOrdersResponse {
+  repeated order.OrderProto orders = 1;
+  common.PaginationResponse pagination = 2;
+}
+
+message CancelOrderRequest {
+  string order_id = 1;
+  string user_id = 2;
+}
+
+message UpdateOrderStatusRequest {
+  string order_id = 1;
+  order.OrderStatusProto new_status = 2;
+  string updated_by_id = 3;
+}
+
+message ListAllOrdersAdminRequest {
+  string admin_id = 1; // ID админа для проверки прав
+  common.PaginationRequest pagination = 2;
+}
+
+message ListAllOrdersAdminResponse {
+  repeated order.OrderProto orders = 1;
+  common.PaginationResponse pagination = 2;
+}
+
+message GenerateOrderReceiptRequest {
+  string order_id = 1;
+  string user_id = 2;
+}
+
+message GenerateOrderReceiptResponse {
+  bytes pdf_content = 1;
+  string file_name = 2;
+}
