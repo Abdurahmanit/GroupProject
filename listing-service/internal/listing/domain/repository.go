@@ -8,6 +8,7 @@ type ListingRepository interface {
 	Delete(ctx context.Context, id string) error
 	FindByID(ctx context.Context, id string) (*Listing, error)
 	FindByFilter(ctx context.Context, filter Filter) (listings []*Listing, total int64, err error)
+	// DeleteListingWithFavoritesTx(ctx context.Context, listingID, userID string) error
 }
 
 type FavoriteRepository interface {
