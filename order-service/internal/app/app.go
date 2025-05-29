@@ -14,12 +14,11 @@ import (
 	redisadapter "github.com/Abdurahmanit/GroupProject/order-service/internal/adapter/redis"
 	"github.com/Abdurahmanit/GroupProject/order-service/internal/app/config"
 	"github.com/Abdurahmanit/GroupProject/order-service/internal/platform/logger"
-	grpcserver "github.com/Abdurahmanit/GroupProject/order-service/internal/port/grpc"
+	grpcport "github.com/Abdurahmanit/GroupProject/order-service/internal/port/grpc"
 	"github.com/Abdurahmanit/GroupProject/order-service/internal/repository"
 	"github.com/Abdurahmanit/GroupProject/order-service/internal/service"
 
 	listingpb "github.com/Abdurahmanit/GroupProject/listing-service/genproto/listing_service"
-	orderservicepb "github.com/Abdurahmanit/GroupProject/order-service/proto/service"
 
 	"github.com/nats-io/nats.go"
 	"github.com/redis/go-redis/v9"
@@ -30,7 +29,7 @@ import (
 type App struct {
 	cfg                  *config.Config
 	log                  logger.Logger
-	server               *grpcserver.Server
+	server               *grpcport.Server
 	orderRepo            repository.OrderRepository
 	cartRepo             repository.CartRepository
 	msgPublisher         natsadapter.MessagePublisher
@@ -127,16 +126,17 @@ func New(cfg *config.Config) (*App, error) {
 	receiptSvc := service.NewReceiptService(orderRepo, appLogger)
 	appLogger.Info("ReceiptService initialized")
 
-	var orderServiceImplementation orderservicepb.OrderServiceServer
+	orderGRPCHandler := grpcport.NewOrderGRPCHandler(cartSvc, orderSvc, receiptSvc, appLogger)
+	appLogger.Info("OrderGRPCHandler initialized")
 
-	grpcSrv := grpcserver.NewServer(
+	grpcSrv := grpcport.NewServer(
 		appLogger,
 		cfg.GRPCServer.Port,
 		cfg.GRPCServer.TimeoutGraceful,
 		cfg.GRPCServer.MaxConnectionIdle,
-		orderServiceImplementation,
+		orderGRPCHandler,
 	)
-	appLogger.Info("gRPC server instance created")
+	appLogger.Info("gRPC server instance created with OrderService handler")
 
 	application := &App{
 		cfg:                  cfg,
