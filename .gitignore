@@ -1,0 +1,20 @@
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+.DS_Store
+
+Thumbs.db
+Desktop.init
+
+# Log files
+*.log
+
+.env
+.env.*
+!.env.example
+
+/news-service/config.yaml
+/news-service/news-service
