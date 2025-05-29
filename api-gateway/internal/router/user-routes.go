@@ -23,8 +23,12 @@ func SetupUserRoutes(r *chi.Mux, userHandler *handler.UserHandler, jwtSecret str
 		authRouter.Delete("/api/user/delete", userHandler.DeleteUser)
 		authRouter.Post("/api/user/deactivate", userHandler.DeactivateUser)
 
+		// Email Verification Routes
+		authRouter.Post("/api/user/email/request-verification", userHandler.RequestEmailVerification)
+		authRouter.Post("/api/user/email/verify", userHandler.VerifyEmail)
+		authRouter.Get("/api/user/email/status", userHandler.CheckEmailVerificationStatus)
+
 		// Admin routes related to users
-		// These also fall under JWTAuth. The handlers/usecases perform further role checks.
 		authRouter.Post("/api/admin/user/delete", userHandler.AdminDeleteUser)
 		authRouter.Post("/api/admin/users/list", userHandler.AdminListUsers)
 		authRouter.Post("/api/admin/users/search", userHandler.AdminSearchUsers)

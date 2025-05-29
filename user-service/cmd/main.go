@@ -2,12 +2,17 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/adapter"
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/config"
+	"github.com/Abdurahmanit/GroupProject/user-service/internal/mailer" // Import mailer
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/repository"
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/usecase"
 	user "github.com/Abdurahmanit/GroupProject/user-service/proto"
@@ -24,7 +29,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("can't initialize zap logger: %v", err)
 	}
-	defer logger.Sync()
+	defer func() {
+		if err := logger.Sync(); err != nil {
+			log.Printf("failed to sync logger: %v\n", err)
+		}
+	}()
 
 	// Load configuration
 	cfg, err := config.LoadConfig()
@@ -37,13 +46,13 @@ func main() {
 	if err != nil {
 		logger.Fatal("Failed to connect to MongoDB", zap.Error(err))
 	}
-	// handle signals for graceful shutdown replacing direct defer.
 	defer func() {
+		logger.Info("Disconnecting MongoDB...")
 		if err = mongoClient.Disconnect(context.Background()); err != nil {
 			logger.Error("Failed to disconnect MongoDB", zap.Error(err))
 		}
 	}()
-	db := mongoClient.Database("bicycle_shop")
+	db := mongoClient.Database("bicycle_shop") // Consider making DB name configurable
 
 	// Connect to Redis
 	redisClient := redis.NewClient(&redis.Options{
@@ -53,11 +62,20 @@ func main() {
 	if err != nil {
 		logger.Fatal("Failed to connect to Redis", zap.Error(err))
 	}
-	defer redisClient.Close()
+	defer func() {
+		logger.Info("Closing Redis connection...")
+		if err := redisClient.Close(); err != nil {
+			logger.Error("Failed to close Redis connection", zap.Error(err))
+		}
+	}()
 
+	// Initialize Mailer Service
+	mailerService := mailer.NewMailerSendService(cfg.MailerSendAPIKey, cfg.MailerSendFromEmail, cfg.MailerSendFromName, logger)
+
+	// Initialize components
 	userRepo := repository.NewUserRepository(db, redisClient, logger)
-	userUsecase := usecase.NewUserUsecase(userRepo, cfg.JWTSecret, logger)
-	userHandler := adapter.NewUserHandler(userUsecase, logger)
+	userUsecase := usecase.NewUserUsecase(userRepo, mailerService, cfg.JWTSecret, logger)
+	userGRPCHandler := adapter.NewUserHandler(userUsecase, logger)
 
 	// Start gRPC server
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
@@ -66,10 +84,22 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer()
-	user.RegisterUserServiceServer(grpcServer, userHandler)
+	user.RegisterUserServiceServer(grpcServer, userGRPCHandler)
 
 	logger.Info("Starting User Service", zap.Int("port", cfg.Port))
-	if err := grpcServer.Serve(lis); err != nil {
-		logger.Fatal("Failed to serve gRPC", zap.Error(err))
-	}
+
+	// Graceful shutdown
+	go func() {
+		if err := grpcServer.Serve(lis); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
+			logger.Fatal("Failed to serve gRPC", zap.Error(err))
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	logger.Info("Shutting down gRPC server...")
+	grpcServer.GracefulStop()
+	logger.Info("User Service stopped.")
 }

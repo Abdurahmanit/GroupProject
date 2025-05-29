@@ -1,13 +1,24 @@
 package mailer
 
 import (
+	"fmt"
 	"gopkg.in/gomail.v2"
 	"os"
 )
 
+type Mailer interface {
+	SendListingCreatedEmail(toEmail, listingTitle string) error
+}
+
+type SMTPMailer struct{}
+
 func SendListingCreatedEmail(toEmail, listingTitle string) error {
 	from := os.Getenv("SMTP_EMAIL")
 	password := os.Getenv("SMTP_PASSWORD")
+
+	if from == "" || password == "" {
+		return fmt.Errorf("SMTP credentials not set")
+	}
 
 	m := gomail.NewMessage()
 	m.SetHeader("From", from)
