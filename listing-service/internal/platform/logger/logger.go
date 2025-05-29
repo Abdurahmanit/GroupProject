@@ -1,6 +1,8 @@
 package logger
 
 import (
+	"fmt"
+	"io"
 	"os"
 	"sync"
 )
@@ -8,7 +10,7 @@ import (
 type Logger struct {
 	config    *LoggerConfig
 	formatter Formatter
-	output    *os.File
+	output    io.Writer
 	mutex     sync.Mutex
 }
 
@@ -23,12 +25,23 @@ func NewLogger() *Logger {
 		formatter = &TextFormatter{}
 	}
 
+	// Открываем файл для записи логов
+	logFile, err := os.OpenFile("internal/platform/logger/logs/app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		fmt.Println("Ошибка при открытии файла лога:", err)
+		logFile = os.Stdout // fallback
+	}
+
+	// MultiWriter пишет и в файл, и в консоль
+	multiOutput := io.MultiWriter(os.Stdout, logFile)
+
 	return &Logger{
 		config:    cfg,
 		formatter: formatter,
-		output:    os.Stdout,
+		output:    multiOutput,
 	}
 }
+
 
 func (l *Logger) Info(msg string, keysAndValues ...interface{}) {
 	if !l.config.ShouldLog("info") {

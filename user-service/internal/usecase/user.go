@@ -6,12 +6,12 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	"regexp" // For basic phone number validation
+	"regexp"
 	"time"
 
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/entity"
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/jwt"
-	"github.com/Abdurahmanit/GroupProject/user-service/internal/mailer" // Import mailer interface
+	"github.com/Abdurahmanit/GroupProject/user-service/internal/mailer"
 	"github.com/Abdurahmanit/GroupProject/user-service/internal/repository"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/zap"
@@ -29,7 +29,7 @@ var (
 	ErrEmailAlreadyVerified    = errors.New("email is already verified")
 	ErrInvalidVerificationCode = errors.New("invalid or expired verification code")
 	ErrMailerFailed            = errors.New("failed to send verification email")
-	ErrUserNotFound            = errors.New("user not found") // Added this line
+	ErrUserNotFound            = errors.New("user not found")
 )
 
 var phoneRegex = regexp.MustCompile(`^\+?[1-9]\d{1,14}$`)
@@ -39,7 +39,7 @@ const verificationCodeExpiryMinutes = 15
 
 type UserUsecase struct {
 	repo      *repository.UserRepository
-	mailer    mailer.Mailer // Use the mailer interface
+	mailer    mailer.Mailer
 	jwtSecret string
 	logger    *zap.Logger
 }
@@ -101,7 +101,7 @@ func (u *UserUsecase) Register(ctx context.Context, username, email, password, p
 		Password:    password,
 		PhoneNumber: phoneNumber,
 		Role:        "customer",
-		IsActive:    true, // User is active by default, email verification is separate
+		IsActive:    true,
 	}
 
 	objectID, err := u.repo.CreateUser(ctx, user)
@@ -116,6 +116,7 @@ func (u *UserUsecase) Register(ctx context.Context, username, email, password, p
 		return "", err
 	}
 	u.logger.Info("User registered successfully in usecase", zap.String("userID", objectID.Hex()), zap.String("email", email))
+
 	return objectID.Hex(), nil
 }
 
@@ -125,7 +126,7 @@ func (u *UserUsecase) Login(ctx context.Context, email, password string) (string
 	if err != nil {
 		if errors.Is(err, repository.ErrUserNotFound) {
 			u.logger.Warn("Login attempt for non-existent user", zap.String("email", email))
-			return "", ErrInvalidCredentials // Correctly use ErrInvalidCredentials
+			return "", ErrInvalidCredentials
 		}
 		u.logger.Error("Error fetching user by email during login", zap.String("email", email), zap.Error(err))
 		return "", err
@@ -163,7 +164,7 @@ func (u *UserUsecase) RequestEmailVerification(ctx context.Context, userIDHex st
 	if err != nil {
 		u.logger.Error("Failed to get user for email verification request", zap.String("userID", userIDHex), zap.Error(err))
 		if errors.Is(err, repository.ErrUserNotFound) {
-			return ErrUserNotFound // Return usecase specific ErrUserNotFound
+			return ErrUserNotFound
 		}
 		return err
 	}
@@ -183,7 +184,7 @@ func (u *UserUsecase) RequestEmailVerification(ctx context.Context, userIDHex st
 	err = u.repo.SaveEmailVerificationDetails(ctx, user.ID, code, expiresAt)
 	if err != nil {
 		u.logger.Error("Failed to save verification code to repository", zap.String("userID", userIDHex), zap.Error(err))
-		return err // This could be ErrUserNotFound from repo if user got deleted just now
+		return err
 	}
 
 	err = u.mailer.SendEmailVerification(user.Email, user.Username, code)
@@ -208,7 +209,7 @@ func (u *UserUsecase) VerifyEmail(ctx context.Context, userIDHex string, code st
 	if err != nil {
 		u.logger.Error("Failed to get user for email verification", zap.String("userID", userIDHex), zap.Error(err))
 		if errors.Is(err, repository.ErrUserNotFound) {
-			return ErrUserNotFound // Return usecase specific ErrUserNotFound
+			return ErrUserNotFound
 		}
 		return err
 	}
@@ -236,7 +237,7 @@ func (u *UserUsecase) VerifyEmail(ctx context.Context, userIDHex string, code st
 	err = u.repo.MarkEmailAsVerified(ctx, user.ID)
 	if err != nil {
 		u.logger.Error("Failed to mark email as verified in repository", zap.String("userID", userIDHex), zap.Error(err))
-		return err // This could be ErrUserNotFound from repo
+		return err
 	}
 
 	u.logger.Info("Email verified successfully", zap.String("userID", userIDHex))
@@ -255,7 +256,7 @@ func (u *UserUsecase) CheckEmailVerificationStatus(ctx context.Context, userIDHe
 	if err != nil {
 		u.logger.Error("Failed to get user for checking email verification status", zap.String("userID", userIDHex), zap.Error(err))
 		if errors.Is(err, repository.ErrUserNotFound) {
-			return false, ErrUserNotFound // Return usecase specific ErrUserNotFound
+			return false, ErrUserNotFound
 		}
 		return false, err
 	}
@@ -284,7 +285,7 @@ func (u *UserUsecase) GetProfile(ctx context.Context, userIDHex string) (*entity
 	if err != nil {
 		u.logger.Error("Failed to get user profile from repository", zap.String("userID", userIDHex), zap.Error(err))
 		if errors.Is(err, repository.ErrUserNotFound) {
-			return nil, ErrUserNotFound // Corrected: return usecase.ErrUserNotFound
+			return nil, ErrUserNotFound
 		}
 		return nil, err
 	}
@@ -309,7 +310,7 @@ func (u *UserUsecase) UpdateProfile(ctx context.Context, userIDHex, username, em
 	if err != nil {
 		u.logger.Error("Failed to get user for UpdateProfile from repository", zap.String("userID", userIDHex), zap.Error(err))
 		if errors.Is(err, repository.ErrUserNotFound) {
-			return ErrUserNotFound // Corrected
+			return ErrUserNotFound
 		}
 		return err
 	}
@@ -318,13 +319,23 @@ func (u *UserUsecase) UpdateProfile(ctx context.Context, userIDHex, username, em
 		return ErrUserInactive
 	}
 
-	updateUser := *currentUser
+	updateUser := *currentUser // Create a mutable copy
 	changedEmail := false
+
+	// Preserve original verification status to only change it if email changes
+	originalIsEmailVerified := currentUser.IsEmailVerified
+	originalEmailVerifiedAt := currentUser.EmailVerifiedAt
 
 	if username != "" {
 		updateUser.Username = username
 	}
+
 	if email != "" && email != currentUser.Email {
+		u.logger.Info("Email change detected in UpdateProfile",
+			zap.String("userID", userIDHex),
+			zap.String("oldEmail", currentUser.Email),
+			zap.String("newEmail", email))
+
 		existingUserWithEmail, emailErr := u.repo.GetUserByEmail(ctx, email)
 		if emailErr == nil && existingUserWithEmail.ID != objectID {
 			u.logger.Warn("UpdateProfile attempt with email already in use by another user", zap.String("userID", userIDHex), zap.String("email", email))
@@ -334,9 +345,17 @@ func (u *UserUsecase) UpdateProfile(ctx context.Context, userIDHex, username, em
 			return emailErr
 		}
 		updateUser.Email = email
-		updateUser.IsEmailVerified = false
-		updateUser.EmailVerifiedAt = nil
+		updateUser.IsEmailVerified = false // <<--- RESET VERIFICATION STATUS
+		updateUser.EmailVerifiedAt = nil   // <<--- CLEAR VERIFICATION TIMESTAMP
+		// Verification code and its expiry will be cleared by SaveEmailVerificationDetails below
 		changedEmail = true
+		u.logger.Info("Email verification status explicitly reset due to email change",
+			zap.Bool("isEmailVerified_set_to", updateUser.IsEmailVerified),
+			zap.Bool("emailVerifiedAt_is_nil_set_to", updateUser.EmailVerifiedAt == nil))
+	} else {
+		// If email is not changing, ensure verification status is preserved from currentUser
+		updateUser.IsEmailVerified = originalIsEmailVerified
+		updateUser.EmailVerifiedAt = originalEmailVerifiedAt
 	}
 
 	if phoneNumber != "" && phoneNumber != currentUser.PhoneNumber {
@@ -355,6 +374,17 @@ func (u *UserUsecase) UpdateProfile(ctx context.Context, userIDHex, username, em
 		updateUser.PhoneNumber = phoneNumber
 	}
 
+	// Log the state of updateUser just before calling repository update
+	u.logger.Info("User entity state before calling repo.UpdateUser",
+		zap.String("userID", updateUser.ID.Hex()),
+		zap.String("username", updateUser.Username),
+		zap.String("email", updateUser.Email),
+		zap.String("phoneNumber", updateUser.PhoneNumber),
+		zap.Bool("isEmailVerified", updateUser.IsEmailVerified),
+		zap.Any("emailVerifiedAt", updateUser.EmailVerifiedAt),
+		zap.String("emailVerificationCode", updateUser.EmailVerificationCode), // Should still be old code if not changed email
+		zap.Any("emailVerificationCodeExpiresAt", updateUser.EmailVerificationCodeExpiresAt))
+
 	err = u.repo.UpdateUser(ctx, &updateUser)
 	if err != nil {
 		u.logger.Error("Failed to update user profile in repository via usecase", zap.String("userID", userIDHex), zap.Error(err))
@@ -364,20 +394,19 @@ func (u *UserUsecase) UpdateProfile(ctx context.Context, userIDHex, username, em
 		if errors.Is(err, repository.ErrDuplicatePhoneNumber) {
 			return ErrDuplicatePhoneNumber
 		}
-		if errors.Is(err, repository.ErrUserNotFound) { // Check if repo.UpdateUser can return this
+		if errors.Is(err, repository.ErrUserNotFound) {
 			return ErrUserNotFound
 		}
 		return err
 	}
 
 	if changedEmail {
-		u.logger.Info("Email changed, resetting verification status.", zap.String("userID", userIDHex))
-		// Clear old verification code details, new IsEmailVerified and EmailVerifiedAt already set in updateUser before repo call.
-		// The repo.UpdateUser should ideally handle these fields based on the passed entity.
-		// If repo.UpdateUser doesn't unset verification code fields, do it explicitly:
+		u.logger.Info("Email changed, now clearing old verification code details from repository.", zap.String("userID", userIDHex))
+		// This will clear EmailVerificationCode and EmailVerificationCodeExpiresAt
 		err = u.repo.SaveEmailVerificationDetails(ctx, updateUser.ID, "", time.Time{})
 		if err != nil {
-			u.logger.Error("Failed to clear old verification details after email change", zap.String("userID", userIDHex), zap.Error(err))
+			u.logger.Error("Failed to clear old verification code details after email change", zap.String("userID", userIDHex), zap.Error(err))
+			// Non-fatal, main profile update succeeded. User can request new verification for the new email.
 		}
 	}
 
@@ -396,7 +425,7 @@ func (u *UserUsecase) ChangePassword(ctx context.Context, userIDHex, oldPassword
 	if err != nil {
 		u.logger.Error("Failed to get user for ChangePassword", zap.String("userID", userIDHex), zap.Error(err))
 		if errors.Is(err, repository.ErrUserNotFound) {
-			return ErrUserNotFound // Corrected
+			return ErrUserNotFound
 		}
 		return err
 	}
@@ -414,7 +443,7 @@ func (u *UserUsecase) ChangePassword(ctx context.Context, userIDHex, oldPassword
 	err = u.repo.UpdatePassword(ctx, objectID, newPassword)
 	if err != nil {
 		u.logger.Error("Failed to update password in repository", zap.String("userID", userIDHex), zap.Error(err))
-		if errors.Is(err, repository.ErrUserNotFound) { // Check if repo.UpdatePassword can return this
+		if errors.Is(err, repository.ErrUserNotFound) {
 			return ErrUserNotFound
 		}
 		return err
@@ -434,7 +463,7 @@ func (u *UserUsecase) DeleteUser(ctx context.Context, userIDHex string) error {
 	if err != nil {
 		u.logger.Error("Failed to hard delete user", zap.String("userID", userIDHex), zap.Error(err))
 		if errors.Is(err, repository.ErrUserNotFound) {
-			return ErrUserNotFound // Corrected
+			return ErrUserNotFound
 		}
 		return err
 	}
@@ -453,7 +482,7 @@ func (u *UserUsecase) DeactivateUser(ctx context.Context, userIDHex string) erro
 	if err != nil {
 		u.logger.Error("Failed to get user for DeactivateUser", zap.String("userID", userIDHex), zap.Error(err))
 		if errors.Is(err, repository.ErrUserNotFound) {
-			return ErrUserNotFound // Corrected
+			return ErrUserNotFound
 		}
 		return err
 	}
@@ -461,7 +490,7 @@ func (u *UserUsecase) DeactivateUser(ctx context.Context, userIDHex string) erro
 		u.logger.Info("User already inactive, no action taken for DeactivateUser", zap.String("userID", userIDHex))
 		return nil
 	}
-	err = u.repo.DeactivateUser(ctx, objectID) // repo.DeactivateUser might return ErrUserNotFound
+	err = u.repo.DeactivateUser(ctx, objectID)
 	if err != nil {
 		u.logger.Error("Failed to deactivate user", zap.String("userID", userIDHex), zap.Error(err))
 		if errors.Is(err, repository.ErrUserNotFound) {
@@ -486,7 +515,7 @@ func (u *UserUsecase) AdminCheck(ctx context.Context, adminIDHex string) (*entit
 	if err != nil {
 		u.logger.Error("Failed to get admin user for AdminCheck", zap.String("adminID", adminIDHex), zap.Error(err))
 		if errors.Is(err, repository.ErrUserNotFound) {
-			return nil, ErrUserNotFound // Corrected
+			return nil, ErrUserNotFound
 		}
 		return nil, err
 	}
@@ -502,7 +531,7 @@ func (u *UserUsecase) AdminDeleteUser(ctx context.Context, adminIDHex, userIDHex
 	u.logger.Info("Admin attempting to hard delete user", zap.String("adminID", adminIDHex), zap.String("targetUserID", userIDHex))
 	admin, err := u.AdminCheck(ctx, adminIDHex)
 	if err != nil {
-		return err // AdminCheck already logs and returns appropriate errors (like ErrUserNotFound for admin)
+		return err
 	}
 	userObjectID, err := primitive.ObjectIDFromHex(userIDHex)
 	if err != nil {
@@ -513,7 +542,7 @@ func (u *UserUsecase) AdminDeleteUser(ctx context.Context, adminIDHex, userIDHex
 	if err != nil {
 		u.logger.Error("Admin failed to hard delete user", zap.String("adminID", admin.ID.Hex()), zap.String("targetUserID", userIDHex), zap.Error(err))
 		if errors.Is(err, repository.ErrUserNotFound) {
-			return ErrUserNotFound // Corrected: Target user not found
+			return ErrUserNotFound
 		}
 		return err
 	}
@@ -566,7 +595,7 @@ func (u *UserUsecase) AdminUpdateUserRole(ctx context.Context, adminIDHex, userI
 	if err != nil {
 		u.logger.Error("Failed to get user for AdminUpdateUserRole", zap.String("targetUserID", userIDHex), zap.Error(err))
 		if errors.Is(err, repository.ErrUserNotFound) {
-			return ErrUserNotFound // Corrected
+			return ErrUserNotFound
 		}
 		return err
 	}
@@ -576,7 +605,7 @@ func (u *UserUsecase) AdminUpdateUserRole(ctx context.Context, adminIDHex, userI
 	err = u.repo.UpdateUser(ctx, userToUpdate)
 	if err != nil {
 		u.logger.Error("Admin failed to update user role in repository", zap.String("adminID", admin.ID.Hex()), zap.String("targetUserID", userIDHex), zap.String("newRole", role), zap.Error(err))
-		if errors.Is(err, repository.ErrUserNotFound) { // Check if repo.UpdateUser can return this
+		if errors.Is(err, repository.ErrUserNotFound) {
 			return ErrUserNotFound
 		}
 		return err
@@ -602,7 +631,7 @@ func (u *UserUsecase) AdminSetUserActiveStatus(ctx context.Context, adminIDHex, 
 	if err != nil {
 		if errors.Is(err, repository.ErrUserNotFound) {
 			u.logger.Warn("Target user not found for AdminSetUserActiveStatus", zap.String("targetUserID", userIDHex), zap.Error(err))
-			return ErrUserNotFound // Corrected
+			return ErrUserNotFound
 		}
 		u.logger.Error("Error fetching target user for AdminSetUserActiveStatus", zap.String("targetUserID", userIDHex), zap.Error(err))
 		return err
@@ -617,7 +646,7 @@ func (u *UserUsecase) AdminSetUserActiveStatus(ctx context.Context, adminIDHex, 
 
 	if err := u.repo.UpdateUser(ctx, targetUser); err != nil {
 		u.logger.Error("Failed to update user active status in repo by admin", zap.String("adminID", admin.ID.Hex()), zap.String("targetUserID", targetUser.ID.Hex()), zap.Error(err))
-		if errors.Is(err, repository.ErrUserNotFound) { // Check if repo.UpdateUser can return this
+		if errors.Is(err, repository.ErrUserNotFound) {
 			return ErrUserNotFound
 		}
 		return errors.New("failed to update user active status")

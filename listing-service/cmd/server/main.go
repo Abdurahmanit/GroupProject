@@ -27,6 +27,10 @@ func main() {
 	appLogger := logger.NewLogger() // Используем твой конструктор
 	appLogger.Info("Application starting...") // Первое сообщение через кастомный логгер
 
+	if err := godotenv.Load(); err != nil {
+		appLogger.Error("Error loading .env file",err)
+	}
+
 	// Инициализация трейсера
 	tp := tracer.InitTracer()
 	defer func() {
@@ -40,9 +44,6 @@ func main() {
 		}
 	}()
 
-	if err := godotenv.Load(); err != nil {
-		appLogger.Error("Error loading .env file",err)
-	}
 
 	// Load configuration
 	cfg, err := config.Load() // config.Load может использовать os.Getenv, которые ты настраиваешь

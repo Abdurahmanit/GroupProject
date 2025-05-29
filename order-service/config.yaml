@@ -27,3 +27,6 @@ logger:
 services:
   listing_service:
     address: "localhost:50053"
+
+cart:
+  ttl: "24h"
