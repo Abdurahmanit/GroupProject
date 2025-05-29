@@ -8,6 +8,14 @@ import (
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
+type ServiceClientConfig struct {
+	Address string `yaml:"address" env:"LISTING_SERVICE_ADDRESS" env-required:"true"`
+}
+
+type ServicesConfig struct {
+	ListingService ServiceClientConfig `yaml:"listing_service"`
+}
+
 type Config struct {
 	Env        string           `yaml:"env" env:"ENV" env-default:"local"`
 	GRPCServer GRPCServerConfig `yaml:"grpc_server"`
@@ -15,6 +23,7 @@ type Config struct {
 	Redis      RedisConfig      `yaml:"redis"`
 	NATS       NATSConfig       `yaml:"nats"`
 	Logger     LoggerConfig     `yaml:"logger"`
+	Services   ServicesConfig   `yaml:"services"`
 }
 
 type GRPCServerConfig struct {
