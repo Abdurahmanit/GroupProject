@@ -111,7 +111,7 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *entity.User) (pri
 		return primitive.NilObjectID, err
 	}
 
-	dbUser := fromEntity(user)
+	dbUser := fromEntity(user) // entity.User has IsEmailVerified: false and EmailVerifiedAt: nil by default from usecase
 	dbUser.Password = string(hashedPassword)
 	if dbUser.ID.IsZero() {
 		dbUser.ID = primitive.NewObjectID()
@@ -119,10 +119,11 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *entity.User) (pri
 	now := time.Now()
 	dbUser.CreatedAt = now
 	dbUser.UpdatedAt = now
-	dbUser.IsEmailVerified = false
-	dbUser.EmailVerifiedAt = nil
-	dbUser.EmailVerificationCode = ""
-	dbUser.EmailVerificationCodeExpiresAt = nil
+	// Ensure these are explicitly set on dbUser if not already done by fromEntity from a pre-set entity
+	dbUser.IsEmailVerified = user.IsEmailVerified
+	dbUser.EmailVerifiedAt = user.EmailVerifiedAt
+	dbUser.EmailVerificationCode = user.EmailVerificationCode                   // Should be empty initially
+	dbUser.EmailVerificationCodeExpiresAt = user.EmailVerificationCodeExpiresAt // Should be nil initially
 
 	_, err = r.db.Collection("users").InsertOne(ctx, dbUser)
 	if err != nil {
@@ -200,8 +201,7 @@ func (r *UserRepository) UpdateUser(ctx context.Context, user *entity.User) erro
 	r.logger.Info("Attempting to update user in repository",
 		zap.String("userID", user.ID.Hex()),
 		zap.Bool("isEmailVerified_in_entity_to_save", user.IsEmailVerified),
-		zap.Any("emailVerifiedAt_in_entity_to_save", user.EmailVerifiedAt),
-		zap.String("emailVerificationCode_in_entity_to_save", user.EmailVerificationCode)) // For observing
+		zap.Any("emailVerifiedAt_in_entity_to_save", user.EmailVerifiedAt))
 
 	user.UpdatedAt = time.Now()
 
@@ -212,28 +212,26 @@ func (r *UserRepository) UpdateUser(ctx context.Context, user *entity.User) erro
 		"role":              user.Role,
 		"is_active":         user.IsActive,
 		"updated_at":        user.UpdatedAt,
-		"is_email_verified": user.IsEmailVerified,
+		"is_email_verified": user.IsEmailVerified, // This will set true or false
 	}
 
-	// Handle EmailVerifiedAt explicitly: set if not nil, otherwise it will be part of $unset
+	// Explicitly add EmailVerifiedAt to $set if it's not nil
 	if user.EmailVerifiedAt != nil {
 		setFields["email_verified_at"] = user.EmailVerifiedAt
 	}
 
-	updateDoc := bson.M{}
-	if len(setFields) > 0 {
-		updateDoc["$set"] = setFields
-	}
+	updateDoc := bson.M{"$set": setFields}
 
+	// Prepare $unset stage for fields that should be removed or nulled
 	unsetFields := bson.M{}
 	if user.EmailVerifiedAt == nil {
-		unsetFields["email_verified_at"] = "" // Add to $unset if it's nil
+		unsetFields["email_verified_at"] = "" // Add to $unset if it's nil in the entity
 	}
 
-	// If email verification status is false (e.g., after an email change),
-	// also unset the old verification code and its expiry.
-	// The usecase might also call SaveEmailVerificationDetails to clear them explicitly,
-	// but this ensures it as part of the main user update if IsEmailVerified is false.
+	// If IsEmailVerified is false (typically after an email change),
+	// ensure old verification codes are also unset.
+	// The usecase also calls SaveEmailVerificationDetails separately to clear codes
+	// when an email is changed, but this acts as a safeguard or handles other scenarios.
 	if !user.IsEmailVerified {
 		unsetFields["email_verification_code"] = ""
 		unsetFields["email_verification_code_expires_at"] = ""
@@ -243,12 +241,12 @@ func (r *UserRepository) UpdateUser(ctx context.Context, user *entity.User) erro
 		updateDoc["$unset"] = unsetFields
 	}
 
-	if len(updateDoc) == 0 { // Should not happen if at least updated_at is set
+	if len(updateDoc["$set"].(bson.M)) == 0 && len(updateDoc["$unset"].(bson.M)) == 0 {
 		r.logger.Info("No fields to update for user.", zap.String("userID", user.ID.Hex()))
 		return nil
 	}
 
-	r.logger.Debug("MongoDB update document prepared", zap.String("userID", user.ID.Hex()), zap.Any("updateDoc", updateDoc))
+	r.logger.Debug("MongoDB update document prepared for UpdateUser", zap.String("userID", user.ID.Hex()), zap.Any("updateDoc", updateDoc))
 
 	result, err := r.db.Collection("users").UpdateOne(ctx, bson.M{"_id": user.ID}, updateDoc)
 	if err != nil {
@@ -412,42 +410,43 @@ func (r *UserRepository) SearchUsers(ctx context.Context, query string, skip, li
 func (r *UserRepository) SaveEmailVerificationDetails(ctx context.Context, userID primitive.ObjectID, code string, expiresAt time.Time) error {
 	r.logger.Info("Saving email verification details",
 		zap.String("userID", userID.Hex()),
-		zap.String("code", code), // Be mindful of logging sensitive codes in production
+		// zap.String("code", code), // Avoid logging sensitive codes in production by default
 		zap.Time("expiresAt", expiresAt))
 
-	updateFields := bson.M{
-		"updated_at": time.Now(),
-	}
-	var unsetFields bson.M
+	setFields := bson.M{"updated_at": time.Now()}
+	unsetFields := bson.M{}
 
-	if code == "" && expiresAt.IsZero() { // Clearing the code
-		unsetFields = bson.M{
-			"email_verification_code":            "",
-			"email_verification_code_expires_at": "",
-		}
-		// Ensure these are not in $set
-		delete(updateFields, "email_verification_code")
-		delete(updateFields, "email_verification_code_expires_at")
-	} else { // Setting a new code
-		updateFields["email_verification_code"] = code
-		updateFields["email_verification_code_expires_at"] = expiresAt
+	if code == "" && expiresAt.IsZero() { // Clearing the code and expiry
+		unsetFields["email_verification_code"] = ""
+		unsetFields["email_verification_code_expires_at"] = ""
+	} else { // Setting a new code and expiry
+		setFields["email_verification_code"] = code
+		setFields["email_verification_code_expires_at"] = expiresAt
 	}
 
-	updateDoc := bson.M{"$set": updateFields}
+	updateDoc := bson.M{}
+	if len(setFields) > 0 {
+		updateDoc["$set"] = setFields
+	}
 	if len(unsetFields) > 0 {
 		updateDoc["$unset"] = unsetFields
 	}
 
+	if len(updateDoc) == 0 { // Should not happen if at least updated_at is set
+		r.logger.Info("No fields to update in SaveEmailVerificationDetails", zap.String("userID", userID.Hex()))
+		return nil
+	}
+
 	result, err := r.db.Collection("users").UpdateOne(ctx, bson.M{"_id": userID}, updateDoc)
 	if err != nil {
-		r.logger.Error("DB error saving email verification details", zap.String("userID", userID.Hex()), zap.Error(err))
+		r.logger.Error("DB error saving/clearing email verification details", zap.String("userID", userID.Hex()), zap.Error(err))
 		return err
 	}
 	if result.MatchedCount == 0 {
-		r.logger.Warn("User not found for saving email verification details", zap.String("userID", userID.Hex()))
+		r.logger.Warn("User not found for saving/clearing email verification details", zap.String("userID", userID.Hex()))
 		return ErrUserNotFound
 	}
-	r.logger.Info("Email verification details saved/cleared", zap.String("userID", userID.Hex()))
+	r.logger.Info("Email verification details saved/cleared successfully", zap.String("userID", userID.Hex()))
 	return nil
 }
 
