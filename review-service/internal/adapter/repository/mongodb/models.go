@@ -20,6 +20,7 @@ type reviewDocument struct {
 	ModerationComment string              `bson:"moderation_comment,omitempty"` // Comment from moderator
 	CreatedAt         time.Time           `bson:"created_at"`
 	UpdatedAt         time.Time           `bson:"updated_at"`
+	Version           int64               `bson:"version"`
 }
 
 // toDomainReview converts a reviewDocument from MongoDB to a domain.Review entity.
