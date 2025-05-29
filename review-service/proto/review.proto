@@ -1,0 +1,120 @@
+syntax = "proto3";
+
+package review;
+
+option go_package = "github.com/Abdurahmanit/GroupProject/review-service/genproto/review_service;review_service";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+service ReviewService {
+  // Creates a new review. UserID in request is the author.
+  rpc CreateReview (CreateReviewRequest) returns (Review);
+  // Gets a specific review by its ID.
+  rpc GetReview (GetReviewRequest) returns (Review);
+  // Updates an existing review (comment, rating). Only author or admin.
+  rpc UpdateReview (UpdateReviewRequest) returns (Review);
+  // Deletes a review. Only author or admin.
+  rpc DeleteReview (DeleteReviewRequest) returns (google.protobuf.Empty);
+
+  // Lists reviews for a specific product. Publicly accessible (usually filtered for "approved").
+  rpc ListReviewsByProduct (ListReviewsByProductRequest) returns (ListReviewsResponse);
+  // Lists reviews written by a specific user. Requires auth.
+  rpc ListReviewsByUser (ListReviewsByUserRequest) returns (ListReviewsResponse);
+
+  // Gets the average rating for a product.
+  rpc GetProductAverageRating (GetProductAverageRatingRequest) returns (ProductAverageRatingResponse);
+
+  // Moderates a review (admin action).
+  rpc ModerateReview (ModerateReviewRequest) returns (Review);
+  // (Optional) Allows a user to report a review.
+  // rpc ReportReview (ReportReviewRequest) returns (google.protobuf.Empty);
+}
+
+message Review {
+  string id = 1;
+  string user_id = 2;       // Author of the review
+  string product_id = 3;    // ID of the product being reviewed (e.g., ListingID)
+  string seller_id = 4;     // Optional: ID of the seller being reviewed
+  int32 rating = 5;         // e.g., 1-5
+  string comment = 6;
+  string status = 7;        // e.g., "pending", "approved", "rejected", "hidden"
+  string moderation_comment = 8; // Optional comment from moderator
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}
+
+message CreateReviewRequest {
+  string user_id = 1;       // Author ID (should match authenticated user or be set by an admin if they can create on behalf)
+  string product_id = 2;
+  string seller_id = 3;     // Optional
+  int32 rating = 4;
+  string comment = 5;
+}
+
+// Response for CreateReview is the created Review message itself.
+
+message GetReviewRequest {
+  string review_id = 1;
+}
+
+// Response for GetReview is the Review message itself.
+
+message UpdateReviewRequest {
+  string review_id = 1;
+  string user_id = 2;       // User performing the update (for auth checks, should match token)
+  int32 rating = 3;         // Optional: new rating (0 or negative could mean no change)
+  string comment = 4;       // Optional: new comment (empty string could mean no change)
+}
+
+// Response for UpdateReview is the updated Review message.
+
+message DeleteReviewRequest {
+  string review_id = 1;
+  string user_id = 2;       // User performing the delete (for auth checks, should match token)
+}
+
+message ListReviewsByProductRequest {
+  string product_id = 1;
+  int32 page = 2;           // For pagination
+  int32 limit = 3;          // For pagination
+  string status_filter = 4; // Optional: e.g., "approved" to only show approved reviews
+}
+
+message ListReviewsByUserRequest {
+  string user_id = 1;       // User whose reviews are being requested (should match authenticated user)
+  int32 page = 2;
+  int32 limit = 3;
+}
+
+message ListReviewsResponse {
+  repeated Review reviews = 1;
+  int64 total = 2;          // Total number of reviews matching the query (for pagination)
+  int32 page = 3;
+  int32 limit = 4;
+}
+
+message GetProductAverageRatingRequest {
+  string product_id = 1;
+}
+
+message ProductAverageRatingResponse {
+  string product_id = 1;
+  double average_rating = 2;
+  int32 review_count = 3;   // Number of reviews contributing to this average (e.g., only approved)
+}
+
+message ModerateReviewRequest {
+  string review_id = 1;
+  string admin_id = 2;            // ID of the admin performing the action (from token)
+  string new_status = 3;          // New status (e.g., "approved", "rejected", "hidden")
+  string moderation_comment = 4;  // Optional comment from the moderator
+}
+
+// Response for ModerateReview is the updated Review message.
+
+// message ReportReviewRequest {
+//   string review_id = 1;
+//   string reporting_user_id = 2; // User reporting the review
+//   string reason = 3;            // Reason for reporting
+// }
