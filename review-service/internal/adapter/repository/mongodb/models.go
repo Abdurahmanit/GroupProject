@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Abdurahmanit/GroupProject/review-service/internal/review/domain"
+	"github.com/Abdurahmanit/GroupProject/review-service/internal/domain"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 

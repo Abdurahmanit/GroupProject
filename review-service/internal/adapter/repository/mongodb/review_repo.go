@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Abdurahmanit/GroupProject/review-service/internal/domain"
 	"github.com/Abdurahmanit/GroupProject/review-service/internal/platform/logger"
-	"github.com/Abdurahmanit/GroupProject/review-service/internal/review/domain"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"

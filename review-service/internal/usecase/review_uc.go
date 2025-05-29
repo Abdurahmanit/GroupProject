@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/Abdurahmanit/GroupProject/review-service/internal/adapter/messaging/nats" // For NATS publisher
+	"github.com/Abdurahmanit/GroupProject/review-service/internal/domain"
 	"github.com/Abdurahmanit/GroupProject/review-service/internal/platform/logger"
-	"github.com/Abdurahmanit/GroupProject/review-service/internal/review/domain"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/zap"
 )

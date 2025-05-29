@@ -8,15 +8,15 @@ import (
 	"os"
 	"testing"
 
-	pb "github.com/Abdurahmanit/GroupProject/review-service/genproto/review_service"
+	pb "github.com/Abdurahmanit/GroupProject/review-service"
 	grpcAdapter "github.com/Abdurahmanit/GroupProject/review-service/internal/adapter/grpc"
 	natsAdapter "github.com/Abdurahmanit/GroupProject/review-service/internal/adapter/messaging/nats"
 	mongoRepo "github.com/Abdurahmanit/GroupProject/review-service/internal/adapter/repository/mongodb"
 	"github.com/Abdurahmanit/GroupProject/review-service/internal/config"
+	"github.com/Abdurahmanit/GroupProject/review-service/internal/domain"
 	"github.com/Abdurahmanit/GroupProject/review-service/internal/middleware" // For context keys
 	platformLogger "github.com/Abdurahmanit/GroupProject/review-service/internal/platform/logger"
-	"github.com/Abdurahmanit/GroupProject/review-service/internal/review/domain"
-	"github.com/Abdurahmanit/GroupProject/review-service/internal/review/usecase"
+	"github.com/Abdurahmanit/GroupProject/review-service/internal/usecase"
 
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"

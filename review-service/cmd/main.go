@@ -19,14 +19,14 @@ import (
 	// Config
 	"github.com/Abdurahmanit/GroupProject/review-service/internal/config"
 	// Domain & Usecase
-	"github.com/Abdurahmanit/GroupProject/review-service/internal/review/usecase"
+	"github.com/Abdurahmanit/GroupProject/review-service/internal/usecase"
 	// Platform
 	"github.com/Abdurahmanit/GroupProject/review-service/internal/platform/logger"
 	"github.com/Abdurahmanit/GroupProject/review-service/internal/platform/metrics"
 	"github.com/Abdurahmanit/GroupProject/review-service/internal/platform/tracer"
 
 	// Proto
-	pb "github.com/Abdurahmanit/GroupProject/review-service/genproto/review_service"
+	pb "github.com/Abdurahmanit/GroupProject/review-service"
 
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"

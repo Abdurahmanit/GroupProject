@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 
-	pb "github.com/Abdurahmanit/GroupProject/review-service/genproto/review_service" // Path to your generated protobuf code
-	"github.com/Abdurahmanit/GroupProject/review-service/internal/middleware"        // Assuming middleware is in a shared or local internal path
+	pb "github.com/Abdurahmanit/GroupProject/review-service" // Path to your generated protobuf code
+	"github.com/Abdurahmanit/GroupProject/review-service/internal/domain"
+	"github.com/Abdurahmanit/GroupProject/review-service/internal/middleware" // Assuming middleware is in a shared or local internal path
 	"github.com/Abdurahmanit/GroupProject/review-service/internal/platform/logger"
-	"github.com/Abdurahmanit/GroupProject/review-service/internal/review/domain"
-	"github.com/Abdurahmanit/GroupProject/review-service/internal/review/usecase"
+	"github.com/Abdurahmanit/GroupProject/review-service/internal/usecase"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	zap "go.uber.org/zap"
