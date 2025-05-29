@@ -6,6 +6,8 @@ github.com/Abdurahmanit/GroupProject/user-service v0.0.0-20250529150312-51b5ede5
 github.com/Abdurahmanit/GroupProject/user-service v0.0.0-20250529150312-51b5ede565f9/go.mod h1:Ah/Iws+nHWv53vyG4GflZa1DE54yORzoyr60MRB80HE=
 github.com/Abdurahmanit/GroupProject/user-service v0.0.0-20250529153231-764b7fee3167 h1:dAzIvcbjUU8j0FYdp1ysq3qxEyKaWJrJj1WsKamsFPs=
 github.com/Abdurahmanit/GroupProject/user-service v0.0.0-20250529153231-764b7fee3167/go.mod h1:Ah/Iws+nHWv53vyG4GflZa1DE54yORzoyr60MRB80HE=
+github.com/Abdurahmanit/GroupProject/user-service v0.0.0-20250529172304-38141d74e416 h1:iO5o5sF1yGXQdt8vr2aZIriDdMLLtS9kNObrdPzWSRs=
+github.com/Abdurahmanit/GroupProject/user-service v0.0.0-20250529172304-38141d74e416/go.mod h1:Ah/Iws+nHWv53vyG4GflZa1DE54yORzoyr60MRB80HE=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/frankban/quicktest v1.14.6 h1:7Xjx+VpznH+oBnejlPUj8oUpdxnVs4f8XU8WnHkI4W8=
