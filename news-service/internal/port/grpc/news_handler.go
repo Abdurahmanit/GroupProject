@@ -37,6 +37,8 @@ func newsEntityToProto(n *entity.News) *newspb.News {
 		Title:     n.Title,
 		Content:   n.Content,
 		AuthorId:  n.AuthorID,
+		ImageUrl:  n.ImageURL,
+		Category:  n.Category,
 		CreatedAt: timestamppb.New(n.CreatedAt),
 		UpdatedAt: timestamppb.New(n.UpdatedAt),
 	}
@@ -61,6 +63,8 @@ func (h *NewsHandler) CreateNews(ctx context.Context, req *newspb.CreateNewsRequ
 		Title:    req.GetTitle(),
 		Content:  req.GetContent(),
 		AuthorID: req.GetAuthorId(),
+		ImageURL: req.GetImageUrl(),
+		Category: req.GetCategory(),
 	}
 	createdNews, err := h.newsUseCase.CreateNews(ctx, input)
 	if err != nil {
@@ -104,6 +108,12 @@ func (h *NewsHandler) UpdateNews(ctx context.Context, req *newspb.UpdateNewsRequ
 	}
 	if req.Content != nil {
 		input.Content = req.Content
+	}
+	if req.ImageUrl != nil {
+		input.ImageURL = req.ImageUrl
+	}
+	if req.Category != nil {
+		input.Category = req.Category
 	}
 	updatedNews, err := h.newsUseCase.UpdateNews(ctx, input)
 	if err != nil {
@@ -225,15 +235,15 @@ func (h *NewsHandler) GetLikesCount(ctx context.Context, req *newspb.GetLikesCou
 	return &newspb.GetLikesCountResponse{LikeCount: count}, nil
 }
 
-func (h *NewsHandler) GetNewsByAuthor(ctx context.Context, req *newspb.GetNewsByAuthorRequest) (*newspb.ListNewsResponse, error) {
-	input := usecase.ListNewsInput{
+func (h *NewsHandler) ListNewsByCategory(ctx context.Context, req *newspb.ListNewsByCategoryRequest) (*newspb.ListNewsResponse, error) {
+	input := usecase.ListNewsByCategoryInput{
+		Category: req.GetCategory(),
 		Page:     int(req.GetPage()),
 		PageSize: int(req.GetPageSize()),
-		Filter:   map[string]interface{}{"author_id": req.GetAuthorId()},
 	}
-	output, err := h.newsUseCase.ListNews(ctx, input)
+	output, err := h.newsUseCase.ListNewsByCategory(ctx, input)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to list news by author: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to list news by category: %v", err)
 	}
 	pbNewsList := make([]*newspb.News, len(output.News))
 	for i, n := range output.News {

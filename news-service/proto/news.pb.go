@@ -31,6 +31,7 @@ type News struct {
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	ImageUrl      string                 `protobuf:"bytes,7,opt,name=image_url,json=imageUrl,proto3" json:"image_url,omitempty"`
+	Category      string                 `protobuf:"bytes,8,opt,name=category,proto3" json:"category,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -114,12 +115,20 @@ func (x *News) GetImageUrl() string {
 	return ""
 }
 
+func (x *News) GetCategory() string {
+	if x != nil {
+		return x.Category
+	}
+	return ""
+}
+
 type CreateNewsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Title         string                 `protobuf:"bytes,1,opt,name=title,proto3" json:"title,omitempty"`
 	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
 	AuthorId      string                 `protobuf:"bytes,3,opt,name=author_id,json=authorId,proto3" json:"author_id,omitempty"`
 	ImageUrl      string                 `protobuf:"bytes,4,opt,name=image_url,json=imageUrl,proto3" json:"image_url,omitempty"`
+	Category      string                 `protobuf:"bytes,5,opt,name=category,proto3" json:"category,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -178,6 +187,13 @@ func (x *CreateNewsRequest) GetAuthorId() string {
 func (x *CreateNewsRequest) GetImageUrl() string {
 	if x != nil {
 		return x.ImageUrl
+	}
+	return ""
+}
+
+func (x *CreateNewsRequest) GetCategory() string {
+	if x != nil {
+		return x.Category
 	}
 	return ""
 }
@@ -319,6 +335,8 @@ type UpdateNewsRequest struct {
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Title         *string                `protobuf:"bytes,2,opt,name=title,proto3,oneof" json:"title,omitempty"`
 	Content       *string                `protobuf:"bytes,3,opt,name=content,proto3,oneof" json:"content,omitempty"`
+	ImageUrl      *string                `protobuf:"bytes,4,opt,name=image_url,json=imageUrl,proto3,oneof" json:"image_url,omitempty"`
+	Category      *string                `protobuf:"bytes,5,opt,name=category,proto3,oneof" json:"category,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -370,6 +388,20 @@ func (x *UpdateNewsRequest) GetTitle() string {
 func (x *UpdateNewsRequest) GetContent() string {
 	if x != nil && x.Content != nil {
 		return *x.Content
+	}
+	return ""
+}
+
+func (x *UpdateNewsRequest) GetImageUrl() string {
+	if x != nil && x.ImageUrl != nil {
+		return *x.ImageUrl
+	}
+	return ""
+}
+
+func (x *UpdateNewsRequest) GetCategory() string {
+	if x != nil && x.Category != nil {
+		return *x.Category
 	}
 	return ""
 }
@@ -558,6 +590,66 @@ func (x *ListNewsRequest) GetPageSize() int32 {
 	return 0
 }
 
+type ListNewsByCategoryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Category      string                 `protobuf:"bytes,1,opt,name=category,proto3" json:"category,omitempty"`
+	Page          int32                  `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      int32                  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListNewsByCategoryRequest) Reset() {
+	*x = ListNewsByCategoryRequest{}
+	mi := &file_news_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListNewsByCategoryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListNewsByCategoryRequest) ProtoMessage() {}
+
+func (x *ListNewsByCategoryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_news_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListNewsByCategoryRequest.ProtoReflect.Descriptor instead.
+func (*ListNewsByCategoryRequest) Descriptor() ([]byte, []int) {
+	return file_news_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ListNewsByCategoryRequest) GetCategory() string {
+	if x != nil {
+		return x.Category
+	}
+	return ""
+}
+
+func (x *ListNewsByCategoryRequest) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListNewsByCategoryRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
 type ListNewsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	News          []*News                `protobuf:"bytes,1,rep,name=news,proto3" json:"news,omitempty"`
@@ -568,7 +660,7 @@ type ListNewsResponse struct {
 
 func (x *ListNewsResponse) Reset() {
 	*x = ListNewsResponse{}
-	mi := &file_news_proto_msgTypes[10]
+	mi := &file_news_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -580,7 +672,7 @@ func (x *ListNewsResponse) String() string {
 func (*ListNewsResponse) ProtoMessage() {}
 
 func (x *ListNewsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_news_proto_msgTypes[10]
+	mi := &file_news_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -593,7 +685,7 @@ func (x *ListNewsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListNewsResponse.ProtoReflect.Descriptor instead.
 func (*ListNewsResponse) Descriptor() ([]byte, []int) {
-	return file_news_proto_rawDescGZIP(), []int{10}
+	return file_news_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ListNewsResponse) GetNews() []*News {
@@ -615,7 +707,7 @@ var File_news_proto protoreflect.FileDescriptor
 const file_news_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"news.proto\x12\x04news\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf6\x01\n" +
+	"news.proto\x12\x04news\x1a\x1fgoogle/protobuf/timestamp.proto\"\x92\x02\n" +
 	"\x04News\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x18\n" +
@@ -625,26 +717,33 @@ const file_news_proto_rawDesc = "" +
 	"created_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
 	"updated_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x1b\n" +
-	"\timage_url\x18\a \x01(\tR\bimageUrl\"}\n" +
+	"\timage_url\x18\a \x01(\tR\bimageUrl\x12\x1a\n" +
+	"\bcategory\x18\b \x01(\tR\bcategory\"\x99\x01\n" +
 	"\x11CreateNewsRequest\x12\x14\n" +
 	"\x05title\x18\x01 \x01(\tR\x05title\x12\x18\n" +
 	"\acontent\x18\x02 \x01(\tR\acontent\x12\x1b\n" +
 	"\tauthor_id\x18\x03 \x01(\tR\bauthorId\x12\x1b\n" +
-	"\timage_url\x18\x04 \x01(\tR\bimageUrl\"$\n" +
+	"\timage_url\x18\x04 \x01(\tR\bimageUrl\x12\x1a\n" +
+	"\bcategory\x18\x05 \x01(\tR\bcategory\"$\n" +
 	"\x12CreateNewsResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\" \n" +
 	"\x0eGetNewsRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"1\n" +
 	"\x0fGetNewsResponse\x12\x1e\n" +
 	"\x04news\x18\x01 \x01(\v2\n" +
-	".news.NewsR\x04news\"s\n" +
+	".news.NewsR\x04news\"\xd1\x01\n" +
 	"\x11UpdateNewsRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\x05title\x18\x02 \x01(\tH\x00R\x05title\x88\x01\x01\x12\x1d\n" +
-	"\acontent\x18\x03 \x01(\tH\x01R\acontent\x88\x01\x01B\b\n" +
+	"\acontent\x18\x03 \x01(\tH\x01R\acontent\x88\x01\x01\x12 \n" +
+	"\timage_url\x18\x04 \x01(\tH\x02R\bimageUrl\x88\x01\x01\x12\x1f\n" +
+	"\bcategory\x18\x05 \x01(\tH\x03R\bcategory\x88\x01\x01B\b\n" +
 	"\x06_titleB\n" +
 	"\n" +
-	"\b_content\"4\n" +
+	"\b_contentB\f\n" +
+	"\n" +
+	"_image_urlB\v\n" +
+	"\t_category\"4\n" +
 	"\x12UpdateNewsResponse\x12\x1e\n" +
 	"\x04news\x18\x01 \x01(\v2\n" +
 	".news.NewsR\x04news\"#\n" +
@@ -654,7 +753,11 @@ const file_news_proto_rawDesc = "" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\"B\n" +
 	"\x0fListNewsRequest\x12\x12\n" +
 	"\x04page\x18\x01 \x01(\x05R\x04page\x12\x1b\n" +
-	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\"S\n" +
+	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\"h\n" +
+	"\x19ListNewsByCategoryRequest\x12\x1a\n" +
+	"\bcategory\x18\x01 \x01(\tR\bcategory\x12\x12\n" +
+	"\x04page\x18\x02 \x01(\x05R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\"S\n" +
 	"\x10ListNewsResponse\x12\x1e\n" +
 	"\x04news\x18\x01 \x03(\v2\n" +
 	".news.NewsR\x04news\x12\x1f\n" +
@@ -673,24 +776,25 @@ func file_news_proto_rawDescGZIP() []byte {
 	return file_news_proto_rawDescData
 }
 
-var file_news_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_news_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_news_proto_goTypes = []any{
-	(*News)(nil),                  // 0: news.News
-	(*CreateNewsRequest)(nil),     // 1: news.CreateNewsRequest
-	(*CreateNewsResponse)(nil),    // 2: news.CreateNewsResponse
-	(*GetNewsRequest)(nil),        // 3: news.GetNewsRequest
-	(*GetNewsResponse)(nil),       // 4: news.GetNewsResponse
-	(*UpdateNewsRequest)(nil),     // 5: news.UpdateNewsRequest
-	(*UpdateNewsResponse)(nil),    // 6: news.UpdateNewsResponse
-	(*DeleteNewsRequest)(nil),     // 7: news.DeleteNewsRequest
-	(*DeleteNewsResponse)(nil),    // 8: news.DeleteNewsResponse
-	(*ListNewsRequest)(nil),       // 9: news.ListNewsRequest
-	(*ListNewsResponse)(nil),      // 10: news.ListNewsResponse
-	(*timestamppb.Timestamp)(nil), // 11: google.protobuf.Timestamp
+	(*News)(nil),                      // 0: news.News
+	(*CreateNewsRequest)(nil),         // 1: news.CreateNewsRequest
+	(*CreateNewsResponse)(nil),        // 2: news.CreateNewsResponse
+	(*GetNewsRequest)(nil),            // 3: news.GetNewsRequest
+	(*GetNewsResponse)(nil),           // 4: news.GetNewsResponse
+	(*UpdateNewsRequest)(nil),         // 5: news.UpdateNewsRequest
+	(*UpdateNewsResponse)(nil),        // 6: news.UpdateNewsResponse
+	(*DeleteNewsRequest)(nil),         // 7: news.DeleteNewsRequest
+	(*DeleteNewsResponse)(nil),        // 8: news.DeleteNewsResponse
+	(*ListNewsRequest)(nil),           // 9: news.ListNewsRequest
+	(*ListNewsByCategoryRequest)(nil), // 10: news.ListNewsByCategoryRequest
+	(*ListNewsResponse)(nil),          // 11: news.ListNewsResponse
+	(*timestamppb.Timestamp)(nil),     // 12: google.protobuf.Timestamp
 }
 var file_news_proto_depIdxs = []int32{
-	11, // 0: news.News.created_at:type_name -> google.protobuf.Timestamp
-	11, // 1: news.News.updated_at:type_name -> google.protobuf.Timestamp
+	12, // 0: news.News.created_at:type_name -> google.protobuf.Timestamp
+	12, // 1: news.News.updated_at:type_name -> google.protobuf.Timestamp
 	0,  // 2: news.GetNewsResponse.news:type_name -> news.News
 	0,  // 3: news.UpdateNewsResponse.news:type_name -> news.News
 	0,  // 4: news.ListNewsResponse.news:type_name -> news.News
@@ -713,7 +817,7 @@ func file_news_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_news_proto_rawDesc), len(file_news_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

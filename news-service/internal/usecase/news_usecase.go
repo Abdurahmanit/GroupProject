@@ -50,6 +50,8 @@ type CreateNewsInput struct {
 	Title    string
 	Content  string
 	AuthorID string
+	ImageURL string
+	Category string
 }
 
 func (uc *NewsUseCase) CreateNews(ctx context.Context, input CreateNewsInput) (*entity.News, error) {
@@ -58,6 +60,8 @@ func (uc *NewsUseCase) CreateNews(ctx context.Context, input CreateNewsInput) (*
 		Title:     input.Title,
 		Content:   input.Content,
 		AuthorID:  input.AuthorID,
+		ImageURL:  input.ImageURL,
+		Category:  input.Category,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -154,9 +158,11 @@ func (uc *NewsUseCase) GetNewsByID(ctx context.Context, id string) (*entity.News
 }
 
 type UpdateNewsInput struct {
-	ID      string
-	Title   *string
-	Content *string
+	ID       string
+	Title    *string
+	Content  *string
+	ImageURL *string
+	Category *string
 }
 
 func (uc *NewsUseCase) UpdateNews(ctx context.Context, input UpdateNewsInput) (*entity.News, error) {
@@ -175,6 +181,14 @@ func (uc *NewsUseCase) UpdateNews(ctx context.Context, input UpdateNewsInput) (*
 	}
 	if input.Content != nil && news.Content != *input.Content {
 		news.Content = *input.Content
+		updated = true
+	}
+	if input.ImageURL != nil && news.ImageURL != *input.ImageURL {
+		news.ImageURL = *input.ImageURL
+		updated = true
+	}
+	if input.Category != nil && news.Category != *input.Category {
+		news.Category = *input.Category
 		updated = true
 	}
 
@@ -258,6 +272,12 @@ type ListNewsInput struct {
 	Filter   map[string]interface{}
 }
 
+type ListNewsByCategoryInput struct {
+	Category string
+	Page     int
+	PageSize int
+}
+
 type ListNewsOutput struct {
 	News       []*entity.News
 	TotalCount int
@@ -275,6 +295,31 @@ func (uc *NewsUseCase) ListNews(ctx context.Context, input ListNewsInput) (*List
 	if err != nil {
 		uc.logger.Error("Failed to list news from repository", zap.Error(err), zap.Any("input", input))
 		return nil, fmt.Errorf("NewsUseCase.ListNews: failed to list news from repo: %w", err)
+	}
+
+	return &ListNewsOutput{News: newsList, TotalCount: total}, nil
+}
+
+func (uc *NewsUseCase) ListNewsByCategory(ctx context.Context, input ListNewsByCategoryInput) (*ListNewsOutput, error) {
+	if input.Page <= 0 {
+		input.Page = 1
+	}
+	if input.PageSize <= 0 {
+		input.PageSize = 10
+	}
+
+	filter := map[string]interface{}{
+		"category": input.Category,
+	}
+	if input.Category == "" {
+		uc.logger.Warn("Listing news by empty category, will fetch all if category filter is not strictly enforced by DB")
+		delete(filter, "category") // Или вернуть ошибку, если категория обязательна
+	}
+
+	newsList, total, err := uc.newsRepo.List(ctx, input.Page, input.PageSize, filter)
+	if err != nil {
+		uc.logger.Error("Failed to list news by category from repository", zap.Error(err), zap.Any("input", input))
+		return nil, fmt.Errorf("NewsUseCase.ListNewsByCategory: failed to list news: %w", err)
 	}
 
 	return &ListNewsOutput{News: newsList, TotalCount: total}, nil

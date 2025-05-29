@@ -14,6 +14,7 @@ message News {
   google.protobuf.Timestamp created_at = 5;
   google.protobuf.Timestamp updated_at = 6;
   string image_url = 7;
+  string category = 8;
 }
 
 message CreateNewsRequest {
@@ -21,44 +22,53 @@ message CreateNewsRequest {
   string content = 2;
   string author_id = 3;
   string image_url = 4;
+  string category = 5;
 }
 
 message CreateNewsResponse {
-string id = 1;
+  string id = 1;
 }
 
 message GetNewsRequest {
-string id = 1;
+  string id = 1;
 }
 
 message GetNewsResponse {
-News news = 1;
+  News news = 1;
 }
 
 message UpdateNewsRequest {
-string id = 1;
-optional string title = 2;
-optional string content = 3;
+  string id = 1;
+  optional string title = 2;
+  optional string content = 3;
+  optional string image_url = 4;
+  optional string category = 5;
 }
 
 message UpdateNewsResponse {
-News news = 1;
+  News news = 1;
 }
 
 message DeleteNewsRequest {
-string id = 1;
+  string id = 1;
 }
 
 message DeleteNewsResponse {
-bool success = 1;
+  bool success = 1;
 }
 
 message ListNewsRequest {
-int32 page = 1;
-int32 page_size = 2;
+  int32 page = 1;
+  int32 page_size = 2;
+}
+
+message ListNewsByCategoryRequest {
+  string category = 1;
+  int32 page = 2;
+  int32 page_size = 3;
 }
 
 message ListNewsResponse {
-repeated News news = 1;
-int32 total_count = 2;
+  repeated News news = 1;
+  int32 total_count = 2;
 }
