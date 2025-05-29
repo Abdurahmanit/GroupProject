@@ -137,6 +137,45 @@ func (r *ListingRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
+
+// func (r *ListingRepository) DeleteListingWithFavoritesTx(ctx context.Context, listingID, userID string) error {
+// 	session, err := r.collection.Database().Client().StartSession()
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer session.EndSession(ctx)
+
+// 	objectID, err := primitive.ObjectIDFromHex(listingID)
+// 	if err != nil {
+// 		return fmt.Errorf("invalid listingID: %v", err)
+// 	}
+
+// 	callback := func(sc mongo.SessionContext) (interface{}, error) {
+// 		// Удаление из listings
+// 		res, err := r.collection.DeleteOne(sc, bson.M{"_id": objectID, "user_id": userID})
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		if res.DeletedCount == 0 {
+// 			return nil, fmt.Errorf("listing not found or not authorized")
+// 		}
+
+// 		// Удаление из favorites — заметь: сравниваем со string
+// 		_, err = r.collection.Database().Collection("favorites").
+// 			DeleteMany(sc, bson.M{"listing_id": listingID})
+// 		if err != nil {
+// 			return nil, err
+// 		}
+
+// 		return nil, nil
+// 	}
+
+// 	_, err = session.WithTransaction(ctx, callback)
+// 	return err
+// }
+
+
+
 func (r *ListingRepository) FindByID(ctx context.Context, id string) (*domain.Listing, error) {
 	if id == "" {
 		r.logger.Error("FindByID: ID is empty")
