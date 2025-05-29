@@ -32,7 +32,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	zap "go.uber.org/zap"
+	"go.uber.org/zap" // Import zap for zap.String, zap.Error etc.
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -51,8 +51,8 @@ func main() {
 	}
 
 	// 1. Initialize Logger
-	appLogger := logger.NewLogger() // Uses environment variables for config (LOG_LEVEL, LOG_FORMAT)
-	appLogger.Info("Application starting...", "service_name", serviceName)
+	appLogger := logger.NewLogger()                                                    // Uses environment variables for config (LOG_LEVEL, LOG_FORMAT)
+	appLogger.Info("Application starting...", zap.String("service_name", serviceName)) // Corrected
 
 	// 2. Load Configuration
 	cfg, err := config.LoadConfig(appLogger) // Pass logger to config loading
@@ -61,7 +61,7 @@ func main() {
 	}
 	appLogger.Info("Configuration loaded successfully",
 		zap.String("grpc_port", cfg.GRPCPort),
-		zap.String("mongo_uri_set", fmt.Sprintf("%t", cfg.MongoURI != "")), // Don't log full URI
+		zap.Bool("mongo_uri_set", cfg.MongoURI != ""), // Corrected: Use zap.Bool for boolean
 		zap.String("nats_url", cfg.NATSURL),
 		zap.String("prometheus_port", cfg.PrometheusMetricsPort),
 	)
@@ -137,8 +137,7 @@ func main() {
 	}
 
 	// Create gRPC server with interceptors
-	// The server.go in adapter/grpc would typically set up these interceptors
-	grpcSrv, cleanupGRPCServer := grpcAdapter.NewGRPCServer(appLogger, cfg.JWTSecret, tp) // Pass tracer provider
+	grpcSrv := grpcAdapter.NewGRPCServer(appLogger, cfg.JWTSecret, tp) // This now returns *grpc.Server
 	pb.RegisterReviewServiceServer(grpcSrv, reviewGRPCHandler)
 
 	// Register reflection service on gRPC server (optional, useful for tools like grpcurl).
@@ -182,11 +181,8 @@ func main() {
 
 	// Gracefully stop the gRPC server
 	appLogger.Info("Shutting down gRPC server...")
-	if cleanupGRPCServer != nil { // If NewGRPCServer returns a cleanup function
-		cleanupGRPCServer()
-	} else {
-		grpcSrv.GracefulStop() // Fallback if no specific cleanup
-	}
+	// The NewGRPCServer does not return a cleanup func anymore, direct stop.
+	grpcSrv.GracefulStop()
 	appLogger.Info("gRPC server stopped.")
 
 	appLogger.Info("Application shutting down...")

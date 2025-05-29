@@ -136,27 +136,23 @@ func TestMain(m *testing.M) {
 
 	testCfg = &config.Config{
 		JWTSecret: "test-secret-for-integration",
-		// Define public methods for the auth interceptor if it's part of NewGRPCServer
 	}
 
-	// Define public methods for the auth interceptor
 	publicMethods := map[string]bool{
 		"/review.ReviewService/GetReview":               true,
 		"/review.ReviewService/ListReviewsByProduct":    true,
 		"/review.ReviewService/GetProductAverageRating": true,
 	}
-	// Define role requirements for specific methods
 	requiredRoles := map[string][]string{
 		"/review.ReviewService/ModerateReview": {adminRole},
-		// Add other admin-only methods here
 	}
 
-	grpcServer := grpcAdapter.NewGRPCServerWithInterceptors(testLogger, testCfg.JWTSecret, nil, publicMethods, requiredRoles) // Pass nil for tracer provider
+	grpcServer := grpcAdapter.NewGRPCServerWithInterceptors(testLogger, testCfg.JWTSecret, nil, publicMethods, requiredRoles)
 	pb.RegisterReviewServiceServer(grpcServer, grpcAdapter.NewReviewHandler(reviewUsecase, testLogger))
 
 	go func() {
 		if err := grpcServer.Serve(listener); err != nil {
-			log.Printf("Test gRPC server failed: %s\n", err)
+			testLogger.Error("Test gRPC server failed to serve", zap.Error(err))
 		}
 	}()
 	defer grpcServer.Stop()
@@ -189,9 +185,7 @@ func createAuthContext(userID, userRole string) context.Context {
 	md := metadata.New(map[string]string{
 		string(middleware.UserIDKey):   userID,
 		string(middleware.UserRoleKey): userRole,
-		// Simulate API Gateway passing the token for the interceptor to parse
-		// This is a simplified way; real tests might generate a valid JWT.
-		"authorization": "Bearer mocktokenfor_" + userID + "_" + userRole,
+		"authorization":                "Bearer mocktokenfor_" + userID + "_" + userRole,
 	})
 	return metadata.NewOutgoingContext(context.Background(), md)
 }
@@ -203,7 +197,7 @@ func TestCreateAndGetReview(t *testing.T) {
 	ctx := createAuthContext(testUserID, customerRole)
 
 	createReq := &pb.CreateReviewRequest{
-		UserId:    testUserID, // Should ideally be ignored if auth ctx is primary source
+		UserId:    testUserID,
 		ProductId: testProductID,
 		Rating:    5,
 		Comment:   "Excellent product!",
@@ -212,16 +206,15 @@ func TestCreateAndGetReview(t *testing.T) {
 	createdReview, err := reviewClient.CreateReview(ctx, createReq)
 	require.NoError(t, err)
 	require.NotNil(t, createdReview)
-	assert.Equal(t, testUserID, createdReview.UserId) // Verifies creator
+	assert.Equal(t, testUserID, createdReview.UserId)
 	assert.Equal(t, testProductID, createdReview.ProductId)
 	assert.Equal(t, int32(5), createdReview.Rating)
 	assert.Equal(t, "Excellent product!", createdReview.Comment)
 	assert.NotEmpty(t, createdReview.Id)
 	assert.Equal(t, string(domain.ReviewStatusPending), createdReview.Status)
-	// TODO: Verify NATS event "review.created" (requires NATS subscriber in test)
 
 	getReq := &pb.GetReviewRequest{ReviewId: createdReview.Id}
-	fetchedReview, err := reviewClient.GetReview(context.Background(), getReq) // GetReview is public
+	fetchedReview, err := reviewClient.GetReview(context.Background(), getReq)
 	require.NoError(t, err)
 	require.NotNil(t, fetchedReview)
 	assert.Equal(t, createdReview.Id, fetchedReview.Id)
@@ -246,7 +239,6 @@ func TestCreateReview_Duplicate(t *testing.T) {
 	_, err := reviewClient.CreateReview(ctx, createReq)
 	require.NoError(t, err)
 
-	// Attempt to create another review for the same product by the same user
 	_, err = reviewClient.CreateReview(ctx, createReq)
 	require.Error(t, err)
 	st, ok := status.FromError(err)
@@ -264,7 +256,7 @@ func TestUpdateReview_ByAuthor_Success(t *testing.T) {
 
 	updateReq := &pb.UpdateReviewRequest{
 		ReviewId: created.Id,
-		UserId:   testUserID, // For gRPC handler check, usecase uses authCtx
+		UserId:   testUserID,
 		Rating:   4,
 		Comment:  "Updated comment",
 	}
@@ -274,7 +266,6 @@ func TestUpdateReview_ByAuthor_Success(t *testing.T) {
 	assert.Equal(t, int32(4), updatedReview.Rating)
 	assert.Equal(t, "Updated comment", updatedReview.Comment)
 	assert.NotEqual(t, created.UpdatedAt, updatedReview.UpdatedAt)
-	// TODO: Verify NATS event "review.updated"
 }
 
 func TestUpdateReview_ByNonAuthor_Forbidden(t *testing.T) {
@@ -303,7 +294,6 @@ func TestDeleteReview_ByAuthor_Success(t *testing.T) {
 	require.Error(t, err)
 	st, _ := status.FromError(err)
 	assert.Equal(t, codes.NotFound, st.Code())
-	// TODO: Verify NATS event "review.deleted"
 }
 
 func TestDeleteReview_ByNonAuthor_Forbidden(t *testing.T) {
@@ -342,7 +332,7 @@ func TestListReviewsByUser_AttemptOtherUser_Forbidden(t *testing.T) {
 	clearReviewsCollection(t)
 	authCtxUser1 := createAuthContext(testUserID, customerRole)
 
-	listReq := &pb.ListReviewsByUserRequest{UserId: testAnotherUserID, Page: 1, Limit: 10} // Requesting another user's reviews
+	listReq := &pb.ListReviewsByUserRequest{UserId: testAnotherUserID, Page: 1, Limit: 10}
 	_, err := reviewClient.ListReviewsByUser(authCtxUser1, listReq)
 	require.Error(t, err)
 	st, _ := status.FromError(err)
@@ -352,34 +342,31 @@ func TestListReviewsByUser_AttemptOtherUser_Forbidden(t *testing.T) {
 func TestGetProductAverageRating_Success(t *testing.T) {
 	clearReviewsCollection(t)
 	ctx := context.Background()
-	adminAuthCtx := createAuthContext(testAdminID, adminRole) // For moderation
+	adminAuthCtx := createAuthContext(testAdminID, adminRole)
 
-	// Create reviews, some pending, some to be approved
 	r1, _ := reviewClient.CreateReview(createAuthContext("userA", customerRole), &pb.CreateReviewRequest{UserId: "userA", ProductId: testProductID, Rating: 5, Comment: "Excellent"})
 	r2, _ := reviewClient.CreateReview(createAuthContext("userB", customerRole), &pb.CreateReviewRequest{UserId: "userB", ProductId: testProductID, Rating: 4, Comment: "Very Good"})
-	r3, _ := reviewClient.CreateReview(createAuthContext("userC", customerRole), &pb.CreateReviewRequest{UserId: "userC", ProductId: testProductID, Rating: 3, Comment: "Okay, but pending"})
+	// r3 is created but remains pending, so it's not used in the average calculation.
+	_, _ = reviewClient.CreateReview(createAuthContext("userC", customerRole), &pb.CreateReviewRequest{UserId: "userC", ProductId: testProductID, Rating: 3, Comment: "Okay, but pending"})
 	_, _ = reviewClient.CreateReview(createAuthContext("userD", customerRole), &pb.CreateReviewRequest{UserId: "userD", ProductId: testAnotherProductID, Rating: 5, Comment: "Different product"})
 
-	// Moderate some to approved
 	_, err := reviewClient.ModerateReview(adminAuthCtx, &pb.ModerateReviewRequest{ReviewId: r1.Id, AdminId: testAdminID, NewStatus: string(domain.ReviewStatusApproved)})
 	require.NoError(t, err)
 	_, err = reviewClient.ModerateReview(adminAuthCtx, &pb.ModerateReviewRequest{ReviewId: r2.Id, AdminId: testAdminID, NewStatus: string(domain.ReviewStatusApproved)})
 	require.NoError(t, err)
-	// r3 remains pending
 
 	avgReq := &pb.GetProductAverageRatingRequest{ProductId: testProductID}
-	avgResp, err := reviewClient.GetProductAverageRating(ctx, avgReq) // Public endpoint
+	avgResp, err := reviewClient.GetProductAverageRating(ctx, avgReq)
 	require.NoError(t, err)
 	require.NotNil(t, avgResp)
 	assert.Equal(t, testProductID, avgResp.ProductId)
-	assert.InDelta(t, 4.5, avgResp.AverageRating, 0.01) // (5+4)/2
-	assert.Equal(t, int32(2), avgResp.ReviewCount)      // Only 2 approved reviews
+	assert.InDelta(t, 4.5, avgResp.AverageRating, 0.01)
+	assert.Equal(t, int32(2), avgResp.ReviewCount)
 }
 
 func TestGetProductAverageRating_NoApprovedReviews(t *testing.T) {
 	clearReviewsCollection(t)
 	ctx := context.Background()
-	// Create reviews, all pending or rejected
 	_, _ = reviewClient.CreateReview(createAuthContext("userA", customerRole), &pb.CreateReviewRequest{UserId: "userA", ProductId: testProductID, Rating: 5, Comment: "Pending"})
 	r2, _ := reviewClient.CreateReview(createAuthContext("userB", customerRole), &pb.CreateReviewRequest{UserId: "userB", ProductId: testProductID, Rating: 4, Comment: "To be rejected"})
 
@@ -404,7 +391,7 @@ func TestModerateReview_AdminApprove_Success(t *testing.T) {
 
 	moderateReq := &pb.ModerateReviewRequest{
 		ReviewId:          created.Id,
-		AdminId:           testAdminID, // Usecase should verify this admin has rights
+		AdminId:           testAdminID,
 		NewStatus:         string(domain.ReviewStatusApproved),
 		ModerationComment: "Looks good.",
 	}
@@ -416,12 +403,11 @@ func TestModerateReview_AdminApprove_Success(t *testing.T) {
 
 	fetched, _ := reviewClient.GetReview(context.Background(), &pb.GetReviewRequest{ReviewId: created.Id})
 	assert.Equal(t, string(domain.ReviewStatusApproved), fetched.Status)
-	// TODO: Verify NATS event "review.moderated"
 }
 
 func TestModerateReview_NonAdmin_Forbidden(t *testing.T) {
 	clearReviewsCollection(t)
-	nonAdminAuthCtx := createAuthContext(testUserID, customerRole) // Customer trying to moderate
+	nonAdminAuthCtx := createAuthContext(testUserID, customerRole)
 	customerAuthCtx := createAuthContext(testAnotherUserID, customerRole)
 
 	created, _ := reviewClient.CreateReview(customerAuthCtx, &pb.CreateReviewRequest{UserId: testAnotherUserID, ProductId: testProductID, Rating: 3, Comment: "Some review"})
@@ -430,7 +416,7 @@ func TestModerateReview_NonAdmin_Forbidden(t *testing.T) {
 	_, err := reviewClient.ModerateReview(nonAdminAuthCtx, moderateReq)
 	require.Error(t, err)
 	st, _ := status.FromError(err)
-	assert.Equal(t, codes.PermissionDenied, st.Code()) // Expecting PermissionDenied due to role check in interceptor/usecase
+	assert.Equal(t, codes.PermissionDenied, st.Code())
 }
 
 func TestGetReview_NotFound(t *testing.T) {
@@ -441,4 +427,53 @@ func TestGetReview_NotFound(t *testing.T) {
 	st, ok := status.FromError(err)
 	require.True(t, ok)
 	assert.Equal(t, codes.NotFound, st.Code())
+}
+
+func TestListReviewsByProduct_Pagination(t *testing.T) {
+	clearReviewsCollection(t)
+	adminCtx := createAuthContext(testAdminID, adminRole)
+
+	for i := 0; i < 5; i++ {
+		userID := fmt.Sprintf("userTest%d", i)
+		reviewCtx := createAuthContext(userID, customerRole)
+		created, err := reviewClient.CreateReview(reviewCtx, &pb.CreateReviewRequest{
+			UserId:    userID,
+			ProductId: testProductID,
+			Rating:    int32(i%5 + 1),
+			Comment:   fmt.Sprintf("Review %d", i+1),
+		})
+		require.NoError(t, err)
+		_, err = reviewClient.ModerateReview(adminCtx, &pb.ModerateReviewRequest{
+			ReviewId:  created.Id,
+			AdminId:   testAdminID,
+			NewStatus: string(domain.ReviewStatusApproved),
+		})
+		require.NoError(t, err)
+	}
+
+	listReq1 := &pb.ListReviewsByProductRequest{ProductId: testProductID, Page: 1, Limit: 2, StatusFilter: string(domain.ReviewStatusApproved)}
+	resp1, err := reviewClient.ListReviewsByProduct(context.Background(), listReq1)
+	require.NoError(t, err)
+	assert.Len(t, resp1.Reviews, 2)
+	assert.Equal(t, int64(5), resp1.Total)
+	assert.Equal(t, int32(1), resp1.Page)
+	assert.Equal(t, int32(2), resp1.Limit)
+
+	listReq2 := &pb.ListReviewsByProductRequest{ProductId: testProductID, Page: 2, Limit: 2, StatusFilter: string(domain.ReviewStatusApproved)}
+	resp2, err := reviewClient.ListReviewsByProduct(context.Background(), listReq2)
+	require.NoError(t, err)
+	assert.Len(t, resp2.Reviews, 2)
+	assert.Equal(t, int64(5), resp2.Total)
+
+	listReq3 := &pb.ListReviewsByProductRequest{ProductId: testProductID, Page: 3, Limit: 2, StatusFilter: string(domain.ReviewStatusApproved)}
+	resp3, err := reviewClient.ListReviewsByProduct(context.Background(), listReq3)
+	require.NoError(t, err)
+	assert.Len(t, resp3.Reviews, 1)
+	assert.Equal(t, int64(5), resp3.Total)
+
+	listReq4 := &pb.ListReviewsByProductRequest{ProductId: testProductID, Page: 4, Limit: 2, StatusFilter: string(domain.ReviewStatusApproved)}
+	resp4, err := reviewClient.ListReviewsByProduct(context.Background(), listReq4)
+	require.NoError(t, err)
+	assert.Len(t, resp4.Reviews, 0)
+	assert.Equal(t, int64(5), resp4.Total)
 }
