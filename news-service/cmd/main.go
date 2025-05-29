@@ -14,6 +14,7 @@ import (
 	grpcPort "github.com/Abdurahmanit/GroupProject/news-service/internal/port/grpc"
 	"github.com/Abdurahmanit/GroupProject/news-service/internal/usecase"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func main() {
@@ -27,8 +28,10 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	zapConfig := zap.NewProductionConfig()
-	logger, err := zapConfig.Build()
+	zapDevConfig := zap.NewDevelopmentConfig()
+	zapDevConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+
+	logger, err := zapDevConfig.Build()
 	if err != nil {
 		log.Fatalf("can't initialize zap logger: %v", err)
 	}

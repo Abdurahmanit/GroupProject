@@ -14,6 +14,11 @@ service UserService {
   rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
   rpc DeactivateUser (DeactivateUserRequest) returns (DeactivateUserResponse);
 
+  // Email Verification RPCs
+  rpc RequestEmailVerification(RequestEmailVerificationRequest) returns (RequestEmailVerificationResponse);
+  rpc VerifyEmail(VerifyEmailRequest) returns (VerifyEmailResponse);
+  rpc CheckEmailVerificationStatus(CheckEmailVerificationStatusRequest) returns (CheckEmailVerificationStatusResponse);
+
   // Admin methods
   rpc AdminDeleteUser (AdminDeleteUserRequest) returns (AdminDeleteUserResponse);
   rpc AdminListUsers (AdminListUsersRequest) returns (AdminListUsersResponse);
@@ -26,7 +31,7 @@ message RegisterRequest {
   string username = 1;
   string email = 2;
   string password = 3;
-  string phone_number = 4; // New field
+  string phone_number = 4;
 }
 
 message RegisterResponse {
@@ -58,18 +63,20 @@ message GetProfileResponse {
   string user_id = 1;
   string username = 2;
   string email = 3;
-  string phone_number = 4; // New field
-  string role = 5;         // Field number adjusted
-  bool is_active = 6;      // Field number adjusted
-  string created_at = 7;   // Field number adjusted (RFC3339)
-  string updated_at = 8;   // Field number adjusted (RFC3339)
+  string phone_number = 4;
+  string role = 5;
+  bool is_active = 6;
+  string created_at = 7;   // RFC3339
+  string updated_at = 8;   // RFC3339
+  bool is_email_verified = 9;
+  string email_verified_at = 10; // RFC3339, empty if not verified
 }
 
 message UpdateProfileRequest {
   string user_id = 1;
   string username = 2;
   string email = 3;
-  string phone_number = 4; // New field (optional for update, client can send empty if not changing)
+  string phone_number = 4;
 }
 
 message UpdateProfileResponse {
@@ -101,6 +108,35 @@ message DeactivateUserRequest {
 message DeactivateUserResponse {
   bool success = 1;
 }
+
+// Email Verification Messages
+message RequestEmailVerificationRequest {
+  string user_id = 1;
+}
+
+message RequestEmailVerificationResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message VerifyEmailRequest {
+  string user_id = 1;
+  string code = 2;
+}
+
+message VerifyEmailResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message CheckEmailVerificationStatusRequest {
+  string user_id = 1;
+}
+
+message CheckEmailVerificationStatusResponse {
+  bool is_verified = 1;
+}
+
 
 // Admin Messages
 message AdminDeleteUserRequest {
@@ -158,9 +194,11 @@ message User {
   string user_id = 1;
   string username = 2;
   string email = 3;
-  string phone_number = 4; // New field
-  string role = 5;         // Field number adjusted
-  bool is_active = 6;      // Field number adjusted
-  string created_at = 7;   // Field number adjusted (RFC3339)
-  string updated_at = 8;   // Field number adjusted (RFC3339)
+  string phone_number = 4;
+  string role = 5;
+  bool is_active = 6;
+  string created_at = 7;   // RFC3339
+  string updated_at = 8;   // RFC3339
+  bool is_email_verified = 9;
+  string email_verified_at = 10; // RFC3339, empty if not verified
 }

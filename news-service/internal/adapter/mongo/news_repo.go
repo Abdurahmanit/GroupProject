@@ -30,6 +30,7 @@ type newsDocument struct {
 	Title     string             `bson:"title"`
 	Content   string             `bson:"content"`
 	AuthorID  string             `bson:"author_id"`
+	ImageURL  string             `bson:"image_url,omitempty"`
 	CreatedAt primitive.DateTime `bson:"created_at"`
 	UpdatedAt primitive.DateTime `bson:"updated_at"`
 }
