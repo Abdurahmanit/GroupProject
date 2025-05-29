@@ -7,13 +7,17 @@ import (
 )
 
 type User struct {
-	ID          primitive.ObjectID
-	Username    string
-	Email       string
-	Password    string
-	PhoneNumber string // New field
-	Role        string // "admin", "customer"
-	IsActive    bool
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID                             primitive.ObjectID
+	Username                       string
+	Email                          string
+	Password                       string
+	PhoneNumber                    string // New field
+	Role                           string // "admin", "customer"
+	IsActive                       bool
+	CreatedAt                      time.Time
+	UpdatedAt                      time.Time
+	IsEmailVerified                bool
+	EmailVerifiedAt                *time.Time // Pointer to allow null
+	EmailVerificationCode          string
+	EmailVerificationCodeExpiresAt *time.Time // Pointer to allow null
 }

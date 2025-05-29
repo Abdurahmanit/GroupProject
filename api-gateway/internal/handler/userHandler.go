@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	user "github.com/Abdurahmanit/GroupProject/user-service/proto"
+	user "github.com/Abdurahmanit/GroupProject/user-service/proto" // Ensure this path is correct
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -20,20 +20,18 @@ type UserHandler struct {
 func NewUserHandler(conn *grpc.ClientConn, logger *zap.Logger) *UserHandler {
 	return &UserHandler{
 		userClient: user.NewUserServiceClient(conn),
-		logger:     logger,
+		logger:     logger.Named("UserHTTPHandler"),
 	}
 }
 
-// Register handles user registration requests.
 func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
-	var grpcReq user.RegisterRequest // Decode directly into gRPC request type
+	var grpcReq user.RegisterRequest
 	if err := json.NewDecoder(r.Body).Decode(&grpcReq); err != nil {
 		h.logger.Error("Failed to decode request body for Register HTTP", zap.Error(err))
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	// Basic validation for presence (more robust validation in usecase/service)
 	if grpcReq.GetUsername() == "" || grpcReq.GetEmail() == "" || grpcReq.GetPassword() == "" || grpcReq.GetPhoneNumber() == "" {
 		h.logger.Warn("Missing required fields for Register HTTP",
 			zap.String("username", grpcReq.GetUsername()),
@@ -43,9 +41,9 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Username, email, password, and phone number are required", http.StatusBadRequest)
 		return
 	}
-	h.logger.Info("HTTP Register request received", zap.String("email", grpcReq.GetEmail()), zap.String("phoneNumber", grpcReq.GetPhoneNumber()))
+	h.logger.Info("HTTP Register request received", zap.String("email", grpcReq.GetEmail()))
 
-	resp, err := h.userClient.Register(r.Context(), &grpcReq) // Pass the decoded struct
+	resp, err := h.userClient.Register(r.Context(), &grpcReq)
 	if err != nil {
 		h.logger.Error("Failed to register user via gRPC from API Gateway", zap.String("email", grpcReq.GetEmail()), zap.Error(err))
 		s, _ := status.FromError(err)
@@ -58,7 +56,6 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	h.logger.Info("HTTP Register request processed successfully", zap.String("email", grpcReq.GetEmail()))
 }
 
-// Login handles user login requests.
 func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req user.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -66,7 +63,7 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	resp, err := h.userClient.Login(context.Background(), &req)
+	resp, err := h.userClient.Login(context.Background(), &req) // Use r.Context() if passing context through
 	if err != nil {
 		h.logger.Error("Failed to login user via gRPC", zap.Error(err))
 		s, _ := status.FromError(err)
@@ -77,7 +74,6 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-// Logout handles user logout requests.
 func (h *UserHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value("user_id").(string)
 	if !ok || userID == "" {
@@ -86,7 +82,7 @@ func (h *UserHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req := &user.LogoutRequest{UserId: userID}
-	resp, err := h.userClient.Logout(context.Background(), req)
+	resp, err := h.userClient.Logout(r.Context(), req) // Use r.Context()
 	if err != nil {
 		h.logger.Error("Failed to logout user via gRPC", zap.String("userID", userID), zap.Error(err))
 		s, _ := status.FromError(err)
@@ -97,7 +93,6 @@ func (h *UserHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-// GetProfile handles requests to get user profile.
 func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value("user_id").(string)
 	if !ok || userID == "" {
@@ -115,11 +110,10 @@ func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp) // resp is GetProfileResponse which now includes PhoneNumber
+	json.NewEncoder(w).Encode(resp)
 	h.logger.Info("HTTP GetProfile request processed successfully", zap.String("userID", userID))
 }
 
-// UpdateProfile handles requests to update user profile.
 func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value("user_id").(string)
 	if !ok || userID == "" {
@@ -128,20 +122,20 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var grpcReq user.UpdateProfileRequest // Decode directly into gRPC request type
+	var grpcReq user.UpdateProfileRequest
 	if err := json.NewDecoder(r.Body).Decode(&grpcReq); err != nil {
 		h.logger.Error("Failed to decode request body for UpdateProfile HTTP", zap.String("userID", userID), zap.Error(err))
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	grpcReq.UserId = userID // Ensure UserId from token is used, not from body if present
+	grpcReq.UserId = userID // Ensure UserId from token is used
 
 	h.logger.Info("HTTP UpdateProfile request received", zap.String("userID", userID),
 		zap.String("username", grpcReq.GetUsername()),
 		zap.String("email", grpcReq.GetEmail()),
 		zap.String("phoneNumber", grpcReq.GetPhoneNumber()))
 
-	resp, err := h.userClient.UpdateProfile(r.Context(), &grpcReq) // Pass the decoded struct
+	resp, err := h.userClient.UpdateProfile(r.Context(), &grpcReq)
 	if err != nil {
 		h.logger.Error("Failed to update profile via gRPC from API Gateway", zap.String("userID", userID), zap.Error(err))
 		s, _ := status.FromError(err)
@@ -153,7 +147,6 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	h.logger.Info("HTTP UpdateProfile request processed successfully", zap.String("userID", userID))
 }
 
-// ChangePassword handles requests to change user password.
 func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value("user_id").(string)
 	if !ok || userID == "" {
@@ -168,7 +161,7 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	}
 	reqBody.UserId = userID
 
-	resp, err := h.userClient.ChangePassword(context.Background(), &reqBody)
+	resp, err := h.userClient.ChangePassword(r.Context(), &reqBody) // Use r.Context()
 	if err != nil {
 		h.logger.Error("Failed to change password via gRPC", zap.String("userID", userID), zap.Error(err))
 		s, _ := status.FromError(err)
@@ -179,7 +172,106 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-// DeleteUser handles requests for a user to (hard) delete their own account.
+// Email Verification Handlers
+func (h *UserHandler) RequestEmailVerification(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		h.logger.Warn("User ID not found in token for RequestEmailVerification")
+		http.Error(w, "User ID not found in token", http.StatusUnauthorized)
+		return
+	}
+	h.logger.Info("HTTP RequestEmailVerification request received", zap.String("userID", userID))
+
+	grpcReq := &user.RequestEmailVerificationRequest{UserId: userID}
+	resp, err := h.userClient.RequestEmailVerification(r.Context(), grpcReq)
+	if err != nil {
+		h.logger.Error("gRPC RequestEmailVerification call failed", zap.String("userID", userID), zap.Error(err))
+		s, _ := status.FromError(err)
+		http.Error(w, s.Message(), GRPCCodeToHTTPStatus(s.Code()))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if !resp.GetSuccess() && resp.Message == usecase.ErrEmailAlreadyVerified.Error() {
+		// It's not a server error if email is already verified, but a specific client-side situation.
+		// We could return a 200 OK with the message, or a 409 Conflict, for example.
+		// Here, we pass the gRPC response as is, client can check resp.Success and resp.Message.
+		w.WriteHeader(http.StatusOK) // Or http.StatusConflict
+	} else if !resp.GetSuccess() {
+		w.WriteHeader(http.StatusConflict) // Generic conflict for other "false success" cases from gRPC that aren't system errors
+	} else {
+		w.WriteHeader(http.StatusOK)
+	}
+	json.NewEncoder(w).Encode(resp)
+	h.logger.Info("HTTP RequestEmailVerification request processed", zap.String("userID", userID), zap.Bool("success", resp.GetSuccess()))
+}
+
+func (h *UserHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		h.logger.Warn("User ID not found in token for VerifyEmail")
+		http.Error(w, "User ID not found in token", http.StatusUnauthorized)
+		return
+	}
+
+	var reqBody struct {
+		Code string `json:"code"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		http.Error(w, "Invalid request body: missing code", http.StatusBadRequest)
+		return
+	}
+	if reqBody.Code == "" {
+		http.Error(w, "Verification code is required", http.StatusBadRequest)
+		return
+	}
+	h.logger.Info("HTTP VerifyEmail request received", zap.String("userID", userID))
+
+	grpcReq := &user.VerifyEmailRequest{UserId: userID, Code: reqBody.Code}
+	resp, err := h.userClient.VerifyEmail(r.Context(), grpcReq)
+	if err != nil {
+		h.logger.Error("gRPC VerifyEmail call failed", zap.String("userID", userID), zap.Error(err))
+		s, _ := status.FromError(err)
+		http.Error(w, s.Message(), GRPCCodeToHTTPStatus(s.Code()))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if !resp.GetSuccess() && (resp.Message == usecase.ErrEmailAlreadyVerified.Error() || resp.Message == usecase.ErrInvalidVerificationCode.Error()) {
+		w.WriteHeader(http.StatusOK) // Or a more specific client error like 400/409
+	} else if !resp.GetSuccess() {
+		w.WriteHeader(http.StatusConflict)
+	} else {
+		w.WriteHeader(http.StatusOK)
+	}
+	json.NewEncoder(w).Encode(resp)
+	h.logger.Info("HTTP VerifyEmail request processed", zap.String("userID", userID), zap.Bool("success", resp.GetSuccess()))
+}
+
+func (h *UserHandler) CheckEmailVerificationStatus(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value("user_id").(string)
+	if !ok || userID == "" {
+		h.logger.Warn("User ID not found in token for CheckEmailVerificationStatus")
+		http.Error(w, "User ID not found in token", http.StatusUnauthorized)
+		return
+	}
+	h.logger.Info("HTTP CheckEmailVerificationStatus request received", zap.String("userID", userID))
+
+	grpcReq := &user.CheckEmailVerificationStatusRequest{UserId: userID}
+	resp, err := h.userClient.CheckEmailVerificationStatus(r.Context(), grpcReq)
+	if err != nil {
+		h.logger.Error("gRPC CheckEmailVerificationStatus call failed", zap.String("userID", userID), zap.Error(err))
+		s, _ := status.FromError(err)
+		http.Error(w, s.Message(), GRPCCodeToHTTPStatus(s.Code()))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(resp)
+	h.logger.Info("HTTP CheckEmailVerificationStatus request processed", zap.String("userID", userID), zap.Bool("is_verified", resp.GetIsVerified()))
+}
+
 func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value("user_id").(string)
 	if !ok || userID == "" {
@@ -188,7 +280,7 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req := &user.DeleteUserRequest{UserId: userID}
-	resp, err := h.userClient.DeleteUser(context.Background(), req)
+	resp, err := h.userClient.DeleteUser(r.Context(), req) // Use r.Context()
 	if err != nil {
 		h.logger.Error("Failed to delete user (hard) via gRPC", zap.String("userID", userID), zap.Error(err))
 		s, _ := status.FromError(err)
@@ -199,7 +291,6 @@ func (h *UserHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-// DeactivateUser handles requests for a user to deactivate (soft delete) their own account.
 func (h *UserHandler) DeactivateUser(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value("user_id").(string)
 	if !ok || userID == "" {
@@ -208,7 +299,7 @@ func (h *UserHandler) DeactivateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	req := &user.DeactivateUserRequest{UserId: userID}
-	resp, err := h.userClient.DeactivateUser(context.Background(), req)
+	resp, err := h.userClient.DeactivateUser(r.Context(), req) // Use r.Context()
 	if err != nil {
 		h.logger.Error("Failed to deactivate user via gRPC", zap.String("userID", userID), zap.Error(err))
 		s, _ := status.FromError(err)
@@ -220,10 +311,8 @@ func (h *UserHandler) DeactivateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // --- Admin Handlers ---
-
-// AdminDeleteUser handles admin requests to (hard) delete a user.
 func (h *UserHandler) AdminDeleteUser(w http.ResponseWriter, r *http.Request) {
-	adminID, ok := r.Context().Value("user_id").(string)
+	adminID, ok := r.Context().Value("user_id").(string) // Assuming admin's user_id is in token
 	if !ok || adminID == "" {
 		h.logger.Warn("Admin ID not found in token for AdminDeleteUser")
 		http.Error(w, "Admin ID not found in token", http.StatusUnauthorized)
@@ -241,7 +330,7 @@ func (h *UserHandler) AdminDeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	grpcReq := &user.AdminDeleteUserRequest{AdminId: adminID, UserIdToDelete: reqBody.UserIDToDelete}
-	resp, err := h.userClient.AdminDeleteUser(context.Background(), grpcReq)
+	resp, err := h.userClient.AdminDeleteUser(r.Context(), grpcReq) // Use r.Context()
 	if err != nil {
 		h.logger.Error("Failed to admin delete user (hard) via gRPC", zap.String("adminID", adminID), zap.String("targetUserID", reqBody.UserIDToDelete), zap.Error(err))
 		s, _ := status.FromError(err)
@@ -252,7 +341,6 @@ func (h *UserHandler) AdminDeleteUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-// AdminListUsers handles admin requests to list users.
 func (h *UserHandler) AdminListUsers(w http.ResponseWriter, r *http.Request) {
 	adminID, ok := r.Context().Value("user_id").(string)
 	if !ok || adminID == "" {
@@ -260,11 +348,16 @@ func (h *UserHandler) AdminListUsers(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Admin ID not found in token", http.StatusUnauthorized)
 		return
 	}
-	var reqBody user.AdminListUsersRequest // Skip, Limit from body
-	_ = json.NewDecoder(r.Body).Decode(&reqBody)
+	// For query params:
+	// skipStr := r.URL.Query().Get("skip")
+	// limitStr := r.URL.Query().Get("limit")
+	// Parse skip and limit, with defaults.
+	// For simplicity, expecting them in body for POST like other admin routes.
+	var reqBody user.AdminListUsersRequest
+	_ = json.NewDecoder(r.Body).Decode(&reqBody) // Allow empty body for default skip/limit from proto or service
 	reqBody.AdminId = adminID
 
-	resp, err := h.userClient.AdminListUsers(context.Background(), &reqBody)
+	resp, err := h.userClient.AdminListUsers(r.Context(), &reqBody) // Use r.Context()
 	if err != nil {
 		h.logger.Error("Failed to list users by admin via gRPC", zap.String("adminID", adminID), zap.Error(err))
 		s, _ := status.FromError(err)
@@ -275,7 +368,6 @@ func (h *UserHandler) AdminListUsers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-// AdminSearchUsers handles admin requests to search users.
 func (h *UserHandler) AdminSearchUsers(w http.ResponseWriter, r *http.Request) {
 	adminID, ok := r.Context().Value("user_id").(string)
 	if !ok || adminID == "" {
@@ -283,15 +375,14 @@ func (h *UserHandler) AdminSearchUsers(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Admin ID not found in token", http.StatusUnauthorized)
 		return
 	}
-	var reqBody user.AdminSearchUsersRequest // Query, Skip, Limit from body
+	var reqBody user.AdminSearchUsersRequest
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 		http.Error(w, "Invalid request body for AdminSearchUsers", http.StatusBadRequest)
 		return
 	}
-	// Query can be empty, gRPC service should handle this (e.g., list all if query is empty)
 	reqBody.AdminId = adminID
 
-	resp, err := h.userClient.AdminSearchUsers(context.Background(), &reqBody)
+	resp, err := h.userClient.AdminSearchUsers(r.Context(), &reqBody) // Use r.Context()
 	if err != nil {
 		h.logger.Error("Failed to search users by admin via gRPC", zap.String("adminID", adminID), zap.String("query", reqBody.Query), zap.Error(err))
 		s, _ := status.FromError(err)
@@ -302,7 +393,6 @@ func (h *UserHandler) AdminSearchUsers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-// AdminUpdateUserRole handles admin requests to update a user's role.
 func (h *UserHandler) AdminUpdateUserRole(w http.ResponseWriter, r *http.Request) {
 	adminID, ok := r.Context().Value("user_id").(string)
 	if !ok || adminID == "" {
@@ -327,7 +417,7 @@ func (h *UserHandler) AdminUpdateUserRole(w http.ResponseWriter, r *http.Request
 		UserIdToUpdate: reqBody.UserIDToUpdate,
 		Role:           reqBody.Role,
 	}
-	resp, err := h.userClient.AdminUpdateUserRole(context.Background(), grpcReq)
+	resp, err := h.userClient.AdminUpdateUserRole(r.Context(), grpcReq) // Use r.Context()
 	if err != nil {
 		h.logger.Error("Failed to update user role by admin via gRPC", zap.String("adminID", adminID), zap.String("targetUserID", reqBody.UserIDToUpdate), zap.Error(err))
 		s, _ := status.FromError(err)
@@ -338,7 +428,6 @@ func (h *UserHandler) AdminUpdateUserRole(w http.ResponseWriter, r *http.Request
 	json.NewEncoder(w).Encode(resp)
 }
 
-// AdminSetUserActiveStatus handles admin requests to activate or deactivate a user.
 func (h *UserHandler) AdminSetUserActiveStatus(w http.ResponseWriter, r *http.Request) {
 	adminID, ok := r.Context().Value("user_id").(string)
 	if !ok || adminID == "" {
@@ -348,7 +437,7 @@ func (h *UserHandler) AdminSetUserActiveStatus(w http.ResponseWriter, r *http.Re
 	}
 	var reqBody struct {
 		UserID   string `json:"user_id"`
-		IsActive bool   `json:"is_active"`
+		IsActive bool   `json:"is_active"` // Field name kept for consistency with existing code
 	}
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 		http.Error(w, "Invalid request body for AdminSetUserActiveStatus", http.StatusBadRequest)
@@ -363,7 +452,7 @@ func (h *UserHandler) AdminSetUserActiveStatus(w http.ResponseWriter, r *http.Re
 		UserId:   reqBody.UserID,
 		IsActive: reqBody.IsActive,
 	}
-	resp, err := h.userClient.AdminSetUserActiveStatus(context.Background(), grpcReq)
+	resp, err := h.userClient.AdminSetUserActiveStatus(r.Context(), grpcReq) // Use r.Context()
 	if err != nil {
 		h.logger.Error("Failed to set user active status by admin via gRPC", zap.String("adminID", adminID), zap.String("targetUserID", reqBody.UserID), zap.Error(err))
 		s, _ := status.FromError(err)
@@ -374,13 +463,13 @@ func (h *UserHandler) AdminSetUserActiveStatus(w http.ResponseWriter, r *http.Re
 	json.NewEncoder(w).Encode(resp)
 }
 
-// GRPCCodeToHTTPStatus maps gRPC status codes to HTTP status codes for consistent error handling.
+// GRPCCodeToHTTPStatus maps gRPC status codes to HTTP status codes.
 func GRPCCodeToHTTPStatus(code codes.Code) int {
 	switch code {
 	case codes.OK:
 		return http.StatusOK
 	case codes.Canceled:
-		return 499
+		return 499 // Client Closed Request (non-standard)
 	case codes.Unknown:
 		return http.StatusInternalServerError
 	case codes.InvalidArgument:
@@ -396,7 +485,9 @@ func GRPCCodeToHTTPStatus(code codes.Code) int {
 	case codes.ResourceExhausted:
 		return http.StatusTooManyRequests
 	case codes.FailedPrecondition:
-		return http.StatusPreconditionFailed
+		// HTTP 412 Precondition Failed is often for ETag mismatches.
+		// HTTP 400 Bad Request or 409 Conflict might be more appropriate for general failed preconditions.
+		return http.StatusBadRequest // Or http.StatusConflict (409)
 	case codes.Aborted:
 		return http.StatusConflict
 	case codes.OutOfRange:
