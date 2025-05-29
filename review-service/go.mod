@@ -1,10 +1,29 @@
 module github.com/Abdurahmanit/GroupProject/review-service
 
-go 1.23.4
+go 1.23.4 // Using your specified Go version
 
 require (
+	github.com/golang-jwt/jwt/v5 v5.2.2
+	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	go.mongodb.org/mongo-driver v1.17.3
+    google.golang.org/grpc v1.72.2
+    go.uber.org/zap v1.27.0
+
+	go.opentelemetry.io/otel/sdk v1.36.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.36.0
+	go.opentelemetry.io/otel v1.36.0 
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.61.0
+	go.mongodb.org/mongo-driver v1.17.3
+	github.com/stretchr/testify v1.10.0
+	github.com/spf13/viper v1.20.1
+	github.com/prometheus/client_golang v1.22.0
+	github.com/ory/dockertest/v3 v3.12.0
+	github.com/nats-io/nats.go v1.42.0
+	github.com/joho/godotenv v1.5.1
+	github.com/google/uuid v1.6.0
+	github.com/golang-jwt/jwt/v5 v5.2.2
+
 )
 
 require (

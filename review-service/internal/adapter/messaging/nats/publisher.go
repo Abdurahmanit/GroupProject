@@ -9,6 +9,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
+	zap "go.uber.org/zap"
 )
 
 var tracer = otel.Tracer("review-service/nats-publisher")

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	otel "go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/grpc"
 )
 

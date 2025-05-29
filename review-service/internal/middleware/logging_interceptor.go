@@ -7,6 +7,7 @@ import (
 
 	"github.com/Abdurahmanit/GroupProject/review-service/internal/platform/logger" // Adjust path if necessary
 	"github.com/golang-jwt/jwt/v5"
+	zap "go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
