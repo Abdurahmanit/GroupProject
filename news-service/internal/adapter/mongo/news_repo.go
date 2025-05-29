@@ -30,7 +30,7 @@ type newsDocument struct {
 	Title     string             `bson:"title"`
 	Content   string             `bson:"content"`
 	AuthorID  string             `bson:"author_id"`
-	ImageURL  string             `bson:"image_url,omitempty"`
+	ImageURL  string             `bson:"image_url,omitempty"` // Новое поле
 	CreatedAt primitive.DateTime `bson:"created_at"`
 	UpdatedAt primitive.DateTime `bson:"updated_at"`
 }
@@ -40,6 +40,7 @@ func toNewsDocument(n *entity.News) (*newsDocument, error) {
 		Title:     n.Title,
 		Content:   n.Content,
 		AuthorID:  n.AuthorID,
+		ImageURL:  n.ImageURL, // Добавлено
 		CreatedAt: primitive.NewDateTimeFromTime(n.CreatedAt),
 		UpdatedAt: primitive.NewDateTimeFromTime(n.UpdatedAt),
 	}
@@ -59,6 +60,7 @@ func toNewsEntity(doc *newsDocument) *entity.News {
 		Title:     doc.Title,
 		Content:   doc.Content,
 		AuthorID:  doc.AuthorID,
+		ImageURL:  doc.ImageURL,
 		CreatedAt: doc.CreatedAt.Time(),
 		UpdatedAt: doc.UpdatedAt.Time(),
 	}
@@ -113,6 +115,7 @@ func (r *NewsMongoRepository) Update(ctx context.Context, news *entity.News) err
 			"title":      doc.Title,
 			"content":    doc.Content,
 			"author_id":  doc.AuthorID,
+			"image_url":  doc.ImageURL, // Добавлено
 			"updated_at": doc.UpdatedAt,
 		},
 	}

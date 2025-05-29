@@ -50,6 +50,7 @@ type CreateNewsInput struct {
 	Title    string
 	Content  string
 	AuthorID string
+	ImageURL string
 }
 
 func (uc *NewsUseCase) CreateNews(ctx context.Context, input CreateNewsInput) (*entity.News, error) {
@@ -58,6 +59,7 @@ func (uc *NewsUseCase) CreateNews(ctx context.Context, input CreateNewsInput) (*
 		Title:     input.Title,
 		Content:   input.Content,
 		AuthorID:  input.AuthorID,
+		ImageURL:  input.ImageURL,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -154,9 +156,10 @@ func (uc *NewsUseCase) GetNewsByID(ctx context.Context, id string) (*entity.News
 }
 
 type UpdateNewsInput struct {
-	ID      string
-	Title   *string
-	Content *string
+	ID       string
+	Title    *string
+	Content  *string
+	ImageURL *string
 }
 
 func (uc *NewsUseCase) UpdateNews(ctx context.Context, input UpdateNewsInput) (*entity.News, error) {
@@ -175,6 +178,10 @@ func (uc *NewsUseCase) UpdateNews(ctx context.Context, input UpdateNewsInput) (*
 	}
 	if input.Content != nil && news.Content != *input.Content {
 		news.Content = *input.Content
+		updated = true
+	}
+	if input.ImageURL != nil && news.ImageURL != *input.ImageURL {
+		news.ImageURL = *input.ImageURL
 		updated = true
 	}
 

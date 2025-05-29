@@ -319,6 +319,7 @@ type UpdateNewsRequest struct {
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Title         *string                `protobuf:"bytes,2,opt,name=title,proto3,oneof" json:"title,omitempty"`
 	Content       *string                `protobuf:"bytes,3,opt,name=content,proto3,oneof" json:"content,omitempty"`
+	ImageUrl      *string                `protobuf:"bytes,4,opt,name=image_url,json=imageUrl,proto3,oneof" json:"image_url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -370,6 +371,13 @@ func (x *UpdateNewsRequest) GetTitle() string {
 func (x *UpdateNewsRequest) GetContent() string {
 	if x != nil && x.Content != nil {
 		return *x.Content
+	}
+	return ""
+}
+
+func (x *UpdateNewsRequest) GetImageUrl() string {
+	if x != nil && x.ImageUrl != nil {
+		return *x.ImageUrl
 	}
 	return ""
 }
@@ -637,14 +645,17 @@ const file_news_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"1\n" +
 	"\x0fGetNewsResponse\x12\x1e\n" +
 	"\x04news\x18\x01 \x01(\v2\n" +
-	".news.NewsR\x04news\"s\n" +
+	".news.NewsR\x04news\"\xa3\x01\n" +
 	"\x11UpdateNewsRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x19\n" +
 	"\x05title\x18\x02 \x01(\tH\x00R\x05title\x88\x01\x01\x12\x1d\n" +
-	"\acontent\x18\x03 \x01(\tH\x01R\acontent\x88\x01\x01B\b\n" +
+	"\acontent\x18\x03 \x01(\tH\x01R\acontent\x88\x01\x01\x12 \n" +
+	"\timage_url\x18\x04 \x01(\tH\x02R\bimageUrl\x88\x01\x01B\b\n" +
 	"\x06_titleB\n" +
 	"\n" +
-	"\b_content\"4\n" +
+	"\b_contentB\f\n" +
+	"\n" +
+	"_image_url\"4\n" +
 	"\x12UpdateNewsResponse\x12\x1e\n" +
 	"\x04news\x18\x01 \x01(\v2\n" +
 	".news.NewsR\x04news\"#\n" +

@@ -7,7 +7,7 @@ type News struct {
 	Title     string
 	Content   string
 	AuthorID  string
-	ImageURL  string `json:"image_url,omitempty"`
+	ImageURL  string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

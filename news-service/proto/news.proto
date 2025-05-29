@@ -24,41 +24,42 @@ message CreateNewsRequest {
 }
 
 message CreateNewsResponse {
-string id = 1;
+  string id = 1;
 }
 
 message GetNewsRequest {
-string id = 1;
+  string id = 1;
 }
 
 message GetNewsResponse {
-News news = 1;
+  News news = 1;
 }
 
 message UpdateNewsRequest {
-string id = 1;
-optional string title = 2;
-optional string content = 3;
+  string id = 1;
+  optional string title = 2;
+  optional string content = 3;
+  optional string image_url = 4;
 }
 
 message UpdateNewsResponse {
-News news = 1;
+  News news = 1;
 }
 
 message DeleteNewsRequest {
-string id = 1;
+  string id = 1;
 }
 
 message DeleteNewsResponse {
-bool success = 1;
+  bool success = 1;
 }
 
 message ListNewsRequest {
-int32 page = 1;
-int32 page_size = 2;
+  int32 page = 1;
+  int32 page_size = 2;
 }
 
 message ListNewsResponse {
-repeated News news = 1;
-int32 total_count = 2;
+  repeated News news = 1;
+  int32 total_count = 2;
 }
