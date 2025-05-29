@@ -16,7 +16,7 @@ type LikeMongoRepository struct {
 	db *mongo.Database
 }
 
-func NewLikeMongoRepository(client *mongo.Client, dbName string) *LikeMongoRepository {
+func NewLikeMongoRepository(client *mongo.Client, dbName string) repository.LikeRepository {
 	return &LikeMongoRepository{
 		db: client.Database(dbName),
 	}
@@ -88,4 +88,20 @@ func (r *LikeMongoRepository) HasLiked(ctx context.Context, contentType string, 
 		return false, fmt.Errorf("failed to check if liked from mongo: %w", err)
 	}
 	return count > 0, nil
+}
+
+func (r *LikeMongoRepository) DeleteByContentID(ctx context.Context, contentType string, contentID string, sessionContext mongo.SessionContext) (int64, error) {
+	targetCtx := ctx
+	if sessionContext != nil {
+		targetCtx = sessionContext
+	}
+	filter := bson.M{
+		"content_type": contentType,
+		"content_id":   contentID,
+	}
+	res, err := r.db.Collection(likesCollectionName).DeleteMany(targetCtx, filter)
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete likes by content_id from mongo: %w", err)
+	}
+	return res.DeletedCount, nil
 }
