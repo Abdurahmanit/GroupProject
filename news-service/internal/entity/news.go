@@ -8,6 +8,7 @@ type News struct {
 	Content   string
 	AuthorID  string
 	ImageURL  string
+	Category  string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

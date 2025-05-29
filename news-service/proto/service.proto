@@ -23,11 +23,5 @@ service NewsService {
   rpc UnlikeNews(UnlikeNewsRequest) returns (UnlikeNewsResponse);
   rpc GetLikesCount(GetLikesCountRequest) returns (GetLikesCountResponse);
 
-  rpc GetNewsByAuthor(GetNewsByAuthorRequest) returns (ListNewsResponse);
-}
-
-message GetNewsByAuthorRequest {
-  string author_id = 1;
-  int32 page = 2;
-  int32 page_size = 3;
+  rpc ListNewsByCategory(ListNewsByCategoryRequest) returns (ListNewsResponse);
 }

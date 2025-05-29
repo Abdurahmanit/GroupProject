@@ -30,7 +30,7 @@ const (
 	NewsService_LikeNews_FullMethodName           = "/news.NewsService/LikeNews"
 	NewsService_UnlikeNews_FullMethodName         = "/news.NewsService/UnlikeNews"
 	NewsService_GetLikesCount_FullMethodName      = "/news.NewsService/GetLikesCount"
-	NewsService_GetNewsByAuthor_FullMethodName    = "/news.NewsService/GetNewsByAuthor"
+	NewsService_ListNewsByCategory_FullMethodName = "/news.NewsService/ListNewsByCategory"
 )
 
 // NewsServiceClient is the client API for NewsService service.
@@ -48,7 +48,7 @@ type NewsServiceClient interface {
 	LikeNews(ctx context.Context, in *LikeNewsRequest, opts ...grpc.CallOption) (*LikeNewsResponse, error)
 	UnlikeNews(ctx context.Context, in *UnlikeNewsRequest, opts ...grpc.CallOption) (*UnlikeNewsResponse, error)
 	GetLikesCount(ctx context.Context, in *GetLikesCountRequest, opts ...grpc.CallOption) (*GetLikesCountResponse, error)
-	GetNewsByAuthor(ctx context.Context, in *GetNewsByAuthorRequest, opts ...grpc.CallOption) (*ListNewsResponse, error)
+	ListNewsByCategory(ctx context.Context, in *ListNewsByCategoryRequest, opts ...grpc.CallOption) (*ListNewsResponse, error)
 }
 
 type newsServiceClient struct {
@@ -169,10 +169,10 @@ func (c *newsServiceClient) GetLikesCount(ctx context.Context, in *GetLikesCount
 	return out, nil
 }
 
-func (c *newsServiceClient) GetNewsByAuthor(ctx context.Context, in *GetNewsByAuthorRequest, opts ...grpc.CallOption) (*ListNewsResponse, error) {
+func (c *newsServiceClient) ListNewsByCategory(ctx context.Context, in *ListNewsByCategoryRequest, opts ...grpc.CallOption) (*ListNewsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListNewsResponse)
-	err := c.cc.Invoke(ctx, NewsService_GetNewsByAuthor_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, NewsService_ListNewsByCategory_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +194,7 @@ type NewsServiceServer interface {
 	LikeNews(context.Context, *LikeNewsRequest) (*LikeNewsResponse, error)
 	UnlikeNews(context.Context, *UnlikeNewsRequest) (*UnlikeNewsResponse, error)
 	GetLikesCount(context.Context, *GetLikesCountRequest) (*GetLikesCountResponse, error)
-	GetNewsByAuthor(context.Context, *GetNewsByAuthorRequest) (*ListNewsResponse, error)
+	ListNewsByCategory(context.Context, *ListNewsByCategoryRequest) (*ListNewsResponse, error)
 	mustEmbedUnimplementedNewsServiceServer()
 }
 
@@ -238,8 +238,8 @@ func (UnimplementedNewsServiceServer) UnlikeNews(context.Context, *UnlikeNewsReq
 func (UnimplementedNewsServiceServer) GetLikesCount(context.Context, *GetLikesCountRequest) (*GetLikesCountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLikesCount not implemented")
 }
-func (UnimplementedNewsServiceServer) GetNewsByAuthor(context.Context, *GetNewsByAuthorRequest) (*ListNewsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetNewsByAuthor not implemented")
+func (UnimplementedNewsServiceServer) ListNewsByCategory(context.Context, *ListNewsByCategoryRequest) (*ListNewsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListNewsByCategory not implemented")
 }
 func (UnimplementedNewsServiceServer) mustEmbedUnimplementedNewsServiceServer() {}
 func (UnimplementedNewsServiceServer) testEmbeddedByValue()                     {}
@@ -460,20 +460,20 @@ func _NewsService_GetLikesCount_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _NewsService_GetNewsByAuthor_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetNewsByAuthorRequest)
+func _NewsService_ListNewsByCategory_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListNewsByCategoryRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(NewsServiceServer).GetNewsByAuthor(ctx, in)
+		return srv.(NewsServiceServer).ListNewsByCategory(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: NewsService_GetNewsByAuthor_FullMethodName,
+		FullMethod: NewsService_ListNewsByCategory_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NewsServiceServer).GetNewsByAuthor(ctx, req.(*GetNewsByAuthorRequest))
+		return srv.(NewsServiceServer).ListNewsByCategory(ctx, req.(*ListNewsByCategoryRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -530,8 +530,8 @@ var NewsService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _NewsService_GetLikesCount_Handler,
 		},
 		{
-			MethodName: "GetNewsByAuthor",
-			Handler:    _NewsService_GetNewsByAuthor_Handler,
+			MethodName: "ListNewsByCategory",
+			Handler:    _NewsService_ListNewsByCategory_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

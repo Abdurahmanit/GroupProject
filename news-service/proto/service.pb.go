@@ -10,7 +10,6 @@ import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
-	sync "sync"
 	unsafe "unsafe"
 )
 
@@ -21,77 +20,13 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type GetNewsByAuthorRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	AuthorId      string                 `protobuf:"bytes,1,opt,name=author_id,json=authorId,proto3" json:"author_id,omitempty"`
-	Page          int32                  `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
-	PageSize      int32                  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetNewsByAuthorRequest) Reset() {
-	*x = GetNewsByAuthorRequest{}
-	mi := &file_service_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetNewsByAuthorRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetNewsByAuthorRequest) ProtoMessage() {}
-
-func (x *GetNewsByAuthorRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_service_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetNewsByAuthorRequest.ProtoReflect.Descriptor instead.
-func (*GetNewsByAuthorRequest) Descriptor() ([]byte, []int) {
-	return file_service_proto_rawDescGZIP(), []int{0}
-}
-
-func (x *GetNewsByAuthorRequest) GetAuthorId() string {
-	if x != nil {
-		return x.AuthorId
-	}
-	return ""
-}
-
-func (x *GetNewsByAuthorRequest) GetPage() int32 {
-	if x != nil {
-		return x.Page
-	}
-	return 0
-}
-
-func (x *GetNewsByAuthorRequest) GetPageSize() int32 {
-	if x != nil {
-		return x.PageSize
-	}
-	return 0
-}
-
 var File_service_proto protoreflect.FileDescriptor
 
 const file_service_proto_rawDesc = "" +
 	"\n" +
 	"\rservice.proto\x12\x04news\x1a\n" +
 	"news.proto\x1a\rcomment.proto\x1a\n" +
-	"like.proto\"f\n" +
-	"\x16GetNewsByAuthorRequest\x12\x1b\n" +
-	"\tauthor_id\x18\x01 \x01(\tR\bauthorId\x12\x12\n" +
-	"\x04page\x18\x02 \x01(\x05R\x04page\x12\x1b\n" +
-	"\tpage_size\x18\x03 \x01(\x05R\bpageSize2\xbf\x06\n" +
+	"like.proto2\xc5\x06\n" +
 	"\vNewsService\x12?\n" +
 	"\n" +
 	"CreateNews\x12\x17.news.CreateNewsRequest\x1a\x18.news.CreateNewsResponse\x126\n" +
@@ -107,35 +42,22 @@ const file_service_proto_rawDesc = "" +
 	"\bLikeNews\x12\x15.news.LikeNewsRequest\x1a\x16.news.LikeNewsResponse\x12?\n" +
 	"\n" +
 	"UnlikeNews\x12\x17.news.UnlikeNewsRequest\x1a\x18.news.UnlikeNewsResponse\x12H\n" +
-	"\rGetLikesCount\x12\x1a.news.GetLikesCountRequest\x1a\x1b.news.GetLikesCountResponse\x12G\n" +
-	"\x0fGetNewsByAuthor\x12\x1c.news.GetNewsByAuthorRequest\x1a\x16.news.ListNewsResponseB@Z>github.com/Abdurahmanit/GroupProject/news-service/proto;newspbb\x06proto3"
+	"\rGetLikesCount\x12\x1a.news.GetLikesCountRequest\x1a\x1b.news.GetLikesCountResponse\x12M\n" +
+	"\x12ListNewsByCategory\x12\x1f.news.ListNewsByCategoryRequest\x1a\x16.news.ListNewsResponseB@Z>github.com/Abdurahmanit/GroupProject/news-service/proto;newspbb\x06proto3"
 
-var (
-	file_service_proto_rawDescOnce sync.Once
-	file_service_proto_rawDescData []byte
-)
-
-func file_service_proto_rawDescGZIP() []byte {
-	file_service_proto_rawDescOnce.Do(func() {
-		file_service_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_service_proto_rawDesc), len(file_service_proto_rawDesc)))
-	})
-	return file_service_proto_rawDescData
-}
-
-var file_service_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_service_proto_goTypes = []any{
-	(*GetNewsByAuthorRequest)(nil),     // 0: news.GetNewsByAuthorRequest
-	(*CreateNewsRequest)(nil),          // 1: news.CreateNewsRequest
-	(*GetNewsRequest)(nil),             // 2: news.GetNewsRequest
-	(*ListNewsRequest)(nil),            // 3: news.ListNewsRequest
-	(*UpdateNewsRequest)(nil),          // 4: news.UpdateNewsRequest
-	(*DeleteNewsRequest)(nil),          // 5: news.DeleteNewsRequest
-	(*CreateCommentRequest)(nil),       // 6: news.CreateCommentRequest
-	(*GetCommentsForNewsRequest)(nil),  // 7: news.GetCommentsForNewsRequest
-	(*DeleteCommentRequest)(nil),       // 8: news.DeleteCommentRequest
-	(*LikeNewsRequest)(nil),            // 9: news.LikeNewsRequest
-	(*UnlikeNewsRequest)(nil),          // 10: news.UnlikeNewsRequest
-	(*GetLikesCountRequest)(nil),       // 11: news.GetLikesCountRequest
+	(*CreateNewsRequest)(nil),          // 0: news.CreateNewsRequest
+	(*GetNewsRequest)(nil),             // 1: news.GetNewsRequest
+	(*ListNewsRequest)(nil),            // 2: news.ListNewsRequest
+	(*UpdateNewsRequest)(nil),          // 3: news.UpdateNewsRequest
+	(*DeleteNewsRequest)(nil),          // 4: news.DeleteNewsRequest
+	(*CreateCommentRequest)(nil),       // 5: news.CreateCommentRequest
+	(*GetCommentsForNewsRequest)(nil),  // 6: news.GetCommentsForNewsRequest
+	(*DeleteCommentRequest)(nil),       // 7: news.DeleteCommentRequest
+	(*LikeNewsRequest)(nil),            // 8: news.LikeNewsRequest
+	(*UnlikeNewsRequest)(nil),          // 9: news.UnlikeNewsRequest
+	(*GetLikesCountRequest)(nil),       // 10: news.GetLikesCountRequest
+	(*ListNewsByCategoryRequest)(nil),  // 11: news.ListNewsByCategoryRequest
 	(*CreateNewsResponse)(nil),         // 12: news.CreateNewsResponse
 	(*GetNewsResponse)(nil),            // 13: news.GetNewsResponse
 	(*ListNewsResponse)(nil),           // 14: news.ListNewsResponse
@@ -149,18 +71,18 @@ var file_service_proto_goTypes = []any{
 	(*GetLikesCountResponse)(nil),      // 22: news.GetLikesCountResponse
 }
 var file_service_proto_depIdxs = []int32{
-	1,  // 0: news.NewsService.CreateNews:input_type -> news.CreateNewsRequest
-	2,  // 1: news.NewsService.GetNews:input_type -> news.GetNewsRequest
-	3,  // 2: news.NewsService.ListNews:input_type -> news.ListNewsRequest
-	4,  // 3: news.NewsService.UpdateNews:input_type -> news.UpdateNewsRequest
-	5,  // 4: news.NewsService.DeleteNews:input_type -> news.DeleteNewsRequest
-	6,  // 5: news.NewsService.CreateComment:input_type -> news.CreateCommentRequest
-	7,  // 6: news.NewsService.GetCommentsForNews:input_type -> news.GetCommentsForNewsRequest
-	8,  // 7: news.NewsService.DeleteComment:input_type -> news.DeleteCommentRequest
-	9,  // 8: news.NewsService.LikeNews:input_type -> news.LikeNewsRequest
-	10, // 9: news.NewsService.UnlikeNews:input_type -> news.UnlikeNewsRequest
-	11, // 10: news.NewsService.GetLikesCount:input_type -> news.GetLikesCountRequest
-	0,  // 11: news.NewsService.GetNewsByAuthor:input_type -> news.GetNewsByAuthorRequest
+	0,  // 0: news.NewsService.CreateNews:input_type -> news.CreateNewsRequest
+	1,  // 1: news.NewsService.GetNews:input_type -> news.GetNewsRequest
+	2,  // 2: news.NewsService.ListNews:input_type -> news.ListNewsRequest
+	3,  // 3: news.NewsService.UpdateNews:input_type -> news.UpdateNewsRequest
+	4,  // 4: news.NewsService.DeleteNews:input_type -> news.DeleteNewsRequest
+	5,  // 5: news.NewsService.CreateComment:input_type -> news.CreateCommentRequest
+	6,  // 6: news.NewsService.GetCommentsForNews:input_type -> news.GetCommentsForNewsRequest
+	7,  // 7: news.NewsService.DeleteComment:input_type -> news.DeleteCommentRequest
+	8,  // 8: news.NewsService.LikeNews:input_type -> news.LikeNewsRequest
+	9,  // 9: news.NewsService.UnlikeNews:input_type -> news.UnlikeNewsRequest
+	10, // 10: news.NewsService.GetLikesCount:input_type -> news.GetLikesCountRequest
+	11, // 11: news.NewsService.ListNewsByCategory:input_type -> news.ListNewsByCategoryRequest
 	12, // 12: news.NewsService.CreateNews:output_type -> news.CreateNewsResponse
 	13, // 13: news.NewsService.GetNews:output_type -> news.GetNewsResponse
 	14, // 14: news.NewsService.ListNews:output_type -> news.ListNewsResponse
@@ -172,7 +94,7 @@ var file_service_proto_depIdxs = []int32{
 	20, // 20: news.NewsService.LikeNews:output_type -> news.LikeNewsResponse
 	21, // 21: news.NewsService.UnlikeNews:output_type -> news.UnlikeNewsResponse
 	22, // 22: news.NewsService.GetLikesCount:output_type -> news.GetLikesCountResponse
-	14, // 23: news.NewsService.GetNewsByAuthor:output_type -> news.ListNewsResponse
+	14, // 23: news.NewsService.ListNewsByCategory:output_type -> news.ListNewsResponse
 	12, // [12:24] is the sub-list for method output_type
 	0,  // [0:12] is the sub-list for method input_type
 	0,  // [0:0] is the sub-list for extension type_name
@@ -194,13 +116,12 @@ func file_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_service_proto_rawDesc), len(file_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   1,
+			NumMessages:   0,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_service_proto_goTypes,
 		DependencyIndexes: file_service_proto_depIdxs,
-		MessageInfos:      file_service_proto_msgTypes,
 	}.Build()
 	File_service_proto = out.File
 	file_service_proto_goTypes = nil
