@@ -37,6 +37,7 @@ func newsEntityToProto(n *entity.News) *newspb.News {
 		Title:     n.Title,
 		Content:   n.Content,
 		AuthorId:  n.AuthorID,
+		ImageUrl:  n.ImageURL,
 		CreatedAt: timestamppb.New(n.CreatedAt),
 		UpdatedAt: timestamppb.New(n.UpdatedAt),
 	}
@@ -61,6 +62,7 @@ func (h *NewsHandler) CreateNews(ctx context.Context, req *newspb.CreateNewsRequ
 		Title:    req.GetTitle(),
 		Content:  req.GetContent(),
 		AuthorID: req.GetAuthorId(),
+		ImageURL: req.GetImageUrl(),
 	}
 	createdNews, err := h.newsUseCase.CreateNews(ctx, input)
 	if err != nil {
@@ -104,6 +106,9 @@ func (h *NewsHandler) UpdateNews(ctx context.Context, req *newspb.UpdateNewsRequ
 	}
 	if req.Content != nil {
 		input.Content = req.Content
+	}
+	if req.ImageUrl != nil {
+		input.ImageURL = req.ImageUrl
 	}
 	updatedNews, err := h.newsUseCase.UpdateNews(ctx, input)
 	if err != nil {
