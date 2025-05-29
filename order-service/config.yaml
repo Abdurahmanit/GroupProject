@@ -23,3 +23,7 @@ nats:
 logger:
   level: "debug"
   encoding: "json"
+
+services:
+  listing_service:
+    address: "localhost:50053"
