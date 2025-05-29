@@ -127,6 +127,7 @@ func (r *ReviewRepository) Update(ctx context.Context, review *domain.Review) er
 			"status":             doc.Status,
 			"moderation_comment": doc.ModerationComment,
 			"updated_at":         doc.UpdatedAt,
+			"version":            doc.Version,
 		},
 	}
 
@@ -210,6 +211,9 @@ func (r *ReviewRepository) FindByUserID(ctx context.Context, userID string, filt
 
 	mongoQuery := bson.M{"user_id": userID}
 	// Could add status filter here too if needed for "my reviews" page
+	if filter.Status != nil {
+		mongoQuery["status"] = *filter.Status
+	}
 
 	findOptions := options.Find()
 	if filter.Limit > 0 {
@@ -248,7 +252,6 @@ func (r *ReviewRepository) FindByUserID(ctx context.Context, userID string, filt
 }
 
 // GetAverageRating calculates the average rating for a product.
-// This might be better handled by an aggregation pipeline or a separate denormalized field.
 func (r *ReviewRepository) GetAverageRating(ctx context.Context, productID string) (float64, int32, error) {
 	r.logger.Debug("Calculating average rating for product_id", zap.String("product_id", productID))
 
@@ -285,4 +288,55 @@ func (r *ReviewRepository) GetAverageRating(ctx context.Context, productID strin
 	}
 
 	return results[0].AverageRating, results[0].Count, nil
+}
+
+// FindByStatus retrieves reviews by their status, with pagination.
+func (r *ReviewRepository) FindByStatus(ctx context.Context, status domain.ReviewStatus, filter domain.ReviewFilter) ([]*domain.Review, int64, error) {
+	r.logger.Debug("Finding reviews by status from DB", zap.String("status", string(status)), zap.Any("filter", filter))
+
+	mongoQuery := bson.M{"status": status}
+
+	findOptions := options.Find()
+	if filter.Limit > 0 {
+		findOptions.SetLimit(int64(filter.Limit))
+		if filter.Page > 0 {
+			findOptions.SetSkip(int64(filter.Page-1) * int64(filter.Limit))
+		}
+	}
+	// Default sort or allow sort by filter
+	sortBy := "created_at"
+	sortOrder := -1 // Descending by default
+	if filter.SortBy != "" {
+		sortBy = filter.SortBy
+	}
+	if filter.SortOrder == "asc" {
+		sortOrder = 1
+	}
+	findOptions.SetSort(bson.D{{Key: sortBy, Value: sortOrder}})
+
+	cursor, err := r.collection.Find(ctx, mongoQuery, findOptions)
+	if err != nil {
+		r.logger.Error("Failed to find reviews by status from DB", zap.Error(err), zap.String("status", string(status)))
+		return nil, 0, fmt.Errorf("db find failed: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var docs []*reviewDocument
+	if err = cursor.All(ctx, &docs); err != nil {
+		r.logger.Error("Failed to decode reviews by status from DB", zap.Error(err))
+		return nil, 0, fmt.Errorf("db cursor all failed: %w", err)
+	}
+
+	domainReviews := make([]*domain.Review, len(docs))
+	for i, doc := range docs {
+		domainReviews[i] = doc.toDomainReview()
+	}
+
+	total, err := r.collection.CountDocuments(ctx, mongoQuery)
+	if err != nil {
+		r.logger.Error("Failed to count reviews by status from DB", zap.Error(err))
+		return nil, 0, fmt.Errorf("db count failed: %w", err)
+	}
+
+	return domainReviews, total, nil
 }

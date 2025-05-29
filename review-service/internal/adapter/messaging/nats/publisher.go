@@ -8,8 +8,8 @@ import (
 
 	"github.com/Abdurahmanit/GroupProject/review-service/internal/platform/logger" // Adjust path if necessary
 	"github.com/nats-io/nats.go"
-	"go.opentelemetry.io/otel"
-	"go.uber.org/zap" // Import zap
+	"go.opentelemetry.io/otel" // Required for NATSHeaderCarrier
+	"go.uber.org/zap"          // Import zap
 )
 
 var tracer = otel.Tracer("review-service/nats-publisher")
@@ -33,10 +33,10 @@ func NewPublisher(url string, log *logger.Logger, appName string) (*Publisher, e
 		nats.ClosedHandler(func(nc *nats.Conn) {
 			log.Info("NATS connection closed")
 		}),
-		nats.DisconnectedErrHandler(func(nc *nats.Conn, err error) { // Corrected: This is a valid option
+		nats.DisconnectErrHandler(func(nc *nats.Conn, err error) { // Corrected
 			log.Warn("NATS disconnected", zap.Error(err))
 		}),
-		nats.ReconnectedHandler(func(nc *nats.Conn) { // Corrected: This is a valid option
+		nats.ReconnectHandler(func(nc *nats.Conn) { // Corrected
 			log.Info("NATS reconnected", zap.String("url", nc.ConnectedUrl()))
 		}),
 	}
@@ -74,20 +74,6 @@ func (p *Publisher) Publish(ctx context.Context, subject string, data interface{
 	msg.Header = make(nats.Header) // nats.Header is map[string][]string
 
 	propagator := otel.GetTextMapPropagator()
-	// NATS Header is a map[string][]string, so we need a carrier that can handle this.
-	// otel's propagation.HeaderCarrier is map[string]string.
-	// We need to adapt or use a custom carrier if NATS headers are strictly []string.
-	// For simplicity, if NATS client library handles single values gracefully, this might work.
-	// Or, iterate and set:
-	// tempCarrier := make(map[string]string)
-	// propagator.Inject(ctx, propagation.MapCarrier(tempCarrier))
-	// for k, v := range tempCarrier {
-	//    msg.Header.Set(k,v)
-	// }
-	// The standard NATS library's nats.Header is `http.Header` which is `map[string][]string`.
-	// otelgrpc uses `metadata.MD` which is also `map[string][]string`.
-	// Let's use a custom carrier for NATS header.
-
 	// Correct way to inject into nats.Header (which is http.Header alias)
 	propagator.Inject(ctx, NATSHeaderCarrier(msg.Header))
 
@@ -103,21 +89,26 @@ func (p *Publisher) Publish(ctx context.Context, subject string, data interface{
 }
 
 // NATSHeaderCarrier adapts nats.Header (which is an alias for http.Header) to be a TextMapCarrier.
-type NATSHeaderCarrier nats.Header
+type NATSHeaderCarrier nats.Header // Note: nats.Header is an alias for http.Header
 
 // Get returns the value associated with the passed key.
+// It is used by the OpenTelemetry propagator to extract context.
 func (c NATSHeaderCarrier) Get(key string) string {
-	return nats.Header(c).Get(key) // Use the underlying http.Header's Get method
+	return nats.Header(c).Get(key)
 }
 
 // Set stores the key-value pair.
+// It is used by the OpenTelemetry propagator to inject context.
 func (c NATSHeaderCarrier) Set(key string, value string) {
-	nats.Header(c).Set(key, value) // Use the underlying http.Header's Set method
+	nats.Header(c).Set(key, value)
 }
 
 // Keys returns a slice of all keys in the carrier.
+// It is used by the OpenTelemetry propagator.
 func (c NATSHeaderCarrier) Keys() []string {
 	keys := make([]string, 0, len(c))
+	// http.Header is map[string][]string. The propagator expects keys to be unique.
+	// The default TextMapPropagator (TraceContext and Baggage) uses specific keys.
 	for k := range c {
 		keys = append(keys, k)
 	}
