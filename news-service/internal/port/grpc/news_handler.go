@@ -126,12 +126,12 @@ func (h *NewsHandler) UpdateNews(ctx context.Context, req *newspb.UpdateNewsRequ
 }
 
 func (h *NewsHandler) DeleteNews(ctx context.Context, req *newspb.DeleteNewsRequest) (*newspb.DeleteNewsResponse, error) {
-	err := h.newsUseCase.DeleteNews(ctx, req.GetId())
+	err := h.newsUseCase.DeleteNewsAndAssociatedData(ctx, req.GetId())
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
-			return nil, status.Errorf(codes.NotFound, "news with id %s not found for delete", req.GetId())
+			return nil, status.Errorf(codes.NotFound, "news with id %s not found for deletion (with associated data)", req.GetId())
 		}
-		return nil, status.Errorf(codes.Internal, "failed to delete news: %v", err)
+		return nil, status.Errorf(codes.Internal, "failed to delete news and associated data: %v", err)
 	}
 	return &newspb.DeleteNewsResponse{Success: true}, nil
 }

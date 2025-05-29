@@ -30,3 +30,6 @@ services:
 
 cart:
   ttl: "24h"
+
+product_cache:
+  ttl: "5m"

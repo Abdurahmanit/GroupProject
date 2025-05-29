@@ -32,6 +32,7 @@ type App struct {
 	server               *grpcport.Server
 	orderRepo            repository.OrderRepository
 	cartRepo             repository.CartRepository
+	productCacheRepo     repository.ProductDetailCache
 	msgPublisher         natsadapter.MessagePublisher
 	listingServiceClient listingpb.ListingServiceClient
 	cartService          service.CartService
@@ -113,11 +114,14 @@ func New(cfg *config.Config) (*App, error) {
 	appLogger.Info("OrderRepository initialized")
 	cartRepo := redisadapter.NewCartRepository(redisClient)
 	appLogger.Info("CartRepository initialized")
+	productCache := redisadapter.NewProductDetailCacheRepository(redisClient)
+	appLogger.Info("ProductDetailCacheRepository initialized")
 
 	cartServiceCfg := service.CartServiceConfig{
-		CartTTL: cfg.Cart.TTL,
+		CartTTL:         cfg.Cart.TTL,
+		ProductCacheTTL: cfg.ProductCache.TTL,
 	}
-	cartSvc := service.NewCartService(cartRepo, listingServiceCl, appLogger, cartServiceCfg)
+	cartSvc := service.NewCartService(cartRepo, productCache, listingServiceCl, appLogger, cartServiceCfg)
 	appLogger.Info("CartService initialized")
 
 	orderSvc := service.NewOrderService(orderRepo, cartSvc, listingServiceCl, msgPublisher, appLogger)
@@ -144,6 +148,7 @@ func New(cfg *config.Config) (*App, error) {
 		server:               grpcSrv,
 		orderRepo:            orderRepo,
 		cartRepo:             cartRepo,
+		productCacheRepo:     productCache,
 		msgPublisher:         msgPublisher,
 		listingServiceClient: listingServiceCl,
 		cartService:          cartSvc,
