@@ -16,6 +16,7 @@ import (
 	"github.com/Abdurahmanit/GroupProject/order-service/internal/platform/logger"
 	grpcserver "github.com/Abdurahmanit/GroupProject/order-service/internal/port/grpc"
 	"github.com/Abdurahmanit/GroupProject/order-service/internal/repository"
+	"github.com/Abdurahmanit/GroupProject/order-service/internal/service"
 
 	listingpb "github.com/Abdurahmanit/GroupProject/listing-service/genproto/listing_service"
 	orderservicepb "github.com/Abdurahmanit/GroupProject/order-service/proto/service"
@@ -34,6 +35,9 @@ type App struct {
 	cartRepo             repository.CartRepository
 	msgPublisher         natsadapter.MessagePublisher
 	listingServiceClient listingpb.ListingServiceClient
+	cartService          service.CartService
+	orderService         service.OrderService
+	receiptService       service.ReceiptService
 	mongoClient          *mongo.Client
 	redisClient          *redis.Client
 	natsConn             *nats.Conn
@@ -67,6 +71,7 @@ func New(cfg *config.Config) (*App, error) {
 	redisClient, err := redisadapter.NewClient(ctx, cfg.Redis)
 	if err != nil {
 		appLogger.Errorf("Failed to initialize Redis client: %v", err)
+		mongoClient.Disconnect(ctx)
 		return nil, fmt.Errorf("failed to initialize Redis client: %w", err)
 	}
 	appLogger.Info("Redis client initialized successfully")
@@ -75,6 +80,8 @@ func New(cfg *config.Config) (*App, error) {
 	natsConn, err := natsadapter.NewConnection(cfg.NATS)
 	if err != nil {
 		appLogger.Errorf("Failed to initialize NATS connection: %v", err)
+		mongoClient.Disconnect(ctx)
+		redisClient.Close()
 		return nil, fmt.Errorf("failed to initialize NATS connection: %w", err)
 	}
 	appLogger.Info("NATS connection initialized successfully")
@@ -83,6 +90,8 @@ func New(cfg *config.Config) (*App, error) {
 	if err != nil {
 		appLogger.Errorf("Failed to initialize NATS publisher: %v", err)
 		natsConn.Close()
+		mongoClient.Disconnect(ctx)
+		redisClient.Close()
 		return nil, fmt.Errorf("failed to initialize NATS publisher: %w", err)
 	}
 	appLogger.Info("NATS MessagePublisher initialized")
@@ -95,6 +104,8 @@ func New(cfg *config.Config) (*App, error) {
 	if err != nil {
 		appLogger.Errorf("Failed to initialize ListingService client: %v", err)
 		natsConn.Close()
+		mongoClient.Disconnect(ctx)
+		redisClient.Close()
 		return nil, fmt.Errorf("failed to initialize ListingService client: %w", err)
 	}
 	appLogger.Info("ListingService gRPC client initialized successfully")
@@ -103,6 +114,18 @@ func New(cfg *config.Config) (*App, error) {
 	appLogger.Info("OrderRepository initialized")
 	cartRepo := redisadapter.NewCartRepository(redisClient)
 	appLogger.Info("CartRepository initialized")
+
+	cartServiceCfg := service.CartServiceConfig{
+		CartTTL: cfg.Cart.TTL,
+	}
+	cartSvc := service.NewCartService(cartRepo, listingServiceCl, appLogger, cartServiceCfg)
+	appLogger.Info("CartService initialized")
+
+	orderSvc := service.NewOrderService(orderRepo, cartSvc, listingServiceCl, msgPublisher, appLogger)
+	appLogger.Info("OrderService initialized")
+
+	receiptSvc := service.NewReceiptService(orderRepo, appLogger)
+	appLogger.Info("ReceiptService initialized")
 
 	var orderServiceImplementation orderservicepb.OrderServiceServer
 
@@ -123,6 +146,9 @@ func New(cfg *config.Config) (*App, error) {
 		cartRepo:             cartRepo,
 		msgPublisher:         msgPublisher,
 		listingServiceClient: listingServiceCl,
+		cartService:          cartSvc,
+		orderService:         orderSvc,
+		receiptService:       receiptSvc,
 		mongoClient:          mongoClient,
 		redisClient:          redisClient,
 		natsConn:             natsConn,
@@ -176,7 +202,7 @@ func (a *App) Run() {
 				a.log.Info("NATS connection drained successfully")
 			}
 		}
-		a.natsConn.Close() // Ensure it's closed even if drain fails or was already closed.
+		a.natsConn.Close()
 		a.log.Info("NATS connection closed")
 	}
 
