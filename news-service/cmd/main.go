@@ -91,7 +91,7 @@ func main() {
 	cacheRepo := redisAdapter.NewRedisCacheRepository(redisClient, logger)
 	logger.Info("Repositories (DB & Cache) initialized")
 
-	newsUC := usecase.NewNewsUseCase(newsRepo, natsPublisher, cacheRepo, logger)
+	newsUC := usecase.NewNewsUseCase(mongoClient, newsRepo, commentRepo, likeRepo, natsPublisher, cacheRepo, logger)
 	commentUC := usecase.NewCommentUseCase(commentRepo, newsRepo)
 	likeUC := usecase.NewLikeUseCase(likeRepo, newsRepo, commentRepo)
 

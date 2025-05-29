@@ -13,7 +13,8 @@ import (
 )
 
 const (
-	defaultCartTTL = 24 * time.Hour
+	defaultCartTTL         = 24 * time.Hour
+	defaultProductCacheTTL = 5 * time.Minute
 )
 
 type CartService interface {
@@ -25,31 +26,42 @@ type CartService interface {
 }
 
 type cartService struct {
-	cartRepo      repository.CartRepository
-	listingClient listingpb.ListingServiceClient
-	log           logger.Logger
-	cartTTL       time.Duration
+	cartRepo        repository.CartRepository
+	productCache    repository.ProductDetailCache
+	listingClient   listingpb.ListingServiceClient
+	log             logger.Logger
+	cartTTL         time.Duration
+	productCacheTTL time.Duration
 }
 
 type CartServiceConfig struct {
-	CartTTL time.Duration
+	CartTTL         time.Duration
+	ProductCacheTTL time.Duration
 }
 
 func NewCartService(
 	cartRepo repository.CartRepository,
+	productCache repository.ProductDetailCache,
 	listingClient listingpb.ListingServiceClient,
 	log logger.Logger,
 	cfg CartServiceConfig,
 ) CartService {
-	ttl := cfg.CartTTL
-	if ttl <= 0 {
-		ttl = defaultCartTTL
+	cartTTL := cfg.CartTTL
+	if cartTTL <= 0 {
+		cartTTL = defaultCartTTL
 	}
+	productCacheTTL := cfg.ProductCacheTTL
+	if productCacheTTL <= 0 {
+		productCacheTTL = defaultProductCacheTTL
+	}
+
 	return &cartService{
-		cartRepo:      cartRepo,
-		listingClient: listingClient,
-		log:           log,
-		cartTTL:       ttl,
+		cartRepo:        cartRepo,
+		productCache:    productCache,
+		listingClient:   listingClient,
+		log:             log,
+		cartTTL:         cartTTL,
+		productCacheTTL: productCacheTTL,
 	}
 }
 
@@ -65,10 +77,26 @@ func (s *cartService) enrichAndConvertCart(ctx context.Context, cartEntity *enti
 	var totalAmount float64
 
 	for _, itemEntity := range cartEntity.Items {
-		listingResp, err := s.listingClient.GetListingByID(ctx, &listingpb.GetListingRequest{Id: itemEntity.ProductID})
-		if err != nil {
-			s.log.Errorf("enrichAndConvertCart: Failed to get listing details for productID %s: %v", itemEntity.ProductID, err)
-			continue
+		var listingResp *listingpb.ListingResponse
+		var err error
+
+		cachedProduct, cacheErr := s.productCache.Get(ctx, itemEntity.ProductID)
+		if cacheErr == nil && cachedProduct != nil {
+			listingResp = cachedProduct
+			s.log.Debugf("Product %s found in cache", itemEntity.ProductID)
+		} else {
+			if cacheErr != nil && cacheErr != repository.ErrNotFound {
+				s.log.Warnf("Error getting product %s from cache: %v. Fetching from service.", itemEntity.ProductID, cacheErr)
+			}
+			s.log.Debugf("Product %s not in cache or cache error, fetching from ListingService", itemEntity.ProductID)
+			listingResp, err = s.listingClient.GetListingByID(ctx, &listingpb.GetListingRequest{Id: itemEntity.ProductID})
+			if err != nil {
+				s.log.Errorf("enrichAndConvertCart: Failed to get listing details for productID %s: %v", itemEntity.ProductID, err)
+				continue
+			}
+			if errSetCache := s.productCache.Set(ctx, itemEntity.ProductID, listingResp, s.productCacheTTL); errSetCache != nil {
+				s.log.Warnf("Failed to set product %s to cache: %v", itemEntity.ProductID, errSetCache)
+			}
 		}
 
 		if listingResp.Status != "ACTIVE" {
@@ -100,11 +128,25 @@ func (s *cartService) AddItem(ctx context.Context, userID, productID string, qua
 		return nil, fmt.Errorf("could not retrieve cart: %w", err)
 	}
 
-	listingResp, err := s.listingClient.GetListingByID(ctx, &listingpb.GetListingRequest{Id: productID})
-	if err != nil {
-		s.log.Errorf("Failed to get listing details for productID %s: %v", productID, err)
-		return nil, fmt.Errorf("product %s not found or service unavailable: %w", productID, err)
+	var listingResp *listingpb.ListingResponse
+	cachedProduct, cacheErr := s.productCache.Get(ctx, productID)
+	if cacheErr == nil && cachedProduct != nil {
+		listingResp = cachedProduct
+		s.log.Debugf("Product %s (for add item check) found in cache", productID)
+	} else {
+		if cacheErr != nil && cacheErr != repository.ErrNotFound {
+			s.log.Warnf("Error getting product %s from cache (for add item check): %v. Fetching from service.", productID, cacheErr)
+		}
+		listingResp, err = s.listingClient.GetListingByID(ctx, &listingpb.GetListingRequest{Id: productID})
+		if err != nil {
+			s.log.Errorf("Failed to get listing details for productID %s: %v", productID, err)
+			return nil, fmt.Errorf("product %s not found or service unavailable: %w", productID, err)
+		}
+		if errSetCache := s.productCache.Set(ctx, productID, listingResp, s.productCacheTTL); errSetCache != nil {
+			s.log.Warnf("Failed to set product %s to cache (after add item check): %v", productID, errSetCache)
+		}
 	}
+
 	if listingResp.Status != "ACTIVE" {
 		s.log.Warnf("Attempted to add inactive product %s (ID: %s) to cart", listingResp.Title, productID)
 		return nil, fmt.Errorf("product %s is not available for purchase", listingResp.Title)

@@ -79,8 +79,8 @@ The frontend, API Gateway, and microservices each run on specific ports:
 - Frontend (React): `3000`
 - API Gateway: `8080`
 - User Service: `50051` (gRPC)
-- Review Service: `50052` (gRPC)
-- Listing Service: `50053` (gRPC)
+- Listing Service: `50052` (gRPC)
+- Review Service: `50053` (gRPC)
 - Order Service: `50054` (gRPC)
 - News Service: `50055` (gRPC)
 
@@ -108,7 +108,7 @@ Grafana is set up for monitoring metrics, traces, and logs. Access Grafana at `h
 - **Message Queue**: NATS (lightweight messaging system for asynchronous communication, e.g., order notifications)
 - **Inter-Service Communication**: gRPC (with Protocol Buffers)
 - **Frontend Communication**: HTTP/REST (via API Gateway)
-- **Frontend**: React with Tailwind CSS
+- **Frontend**: Common JS + CSS
 - **Monitoring**: Grafana
 - **PDF Generation**: gofpdf library for order receipts
 

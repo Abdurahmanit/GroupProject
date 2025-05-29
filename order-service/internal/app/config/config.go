@@ -6,7 +6,12 @@ import (
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/joho/godotenv"
 )
+
+type ProductCacheConfig struct {
+	TTL time.Duration `yaml:"ttl" env:"PRODUCT_CACHE_TTL" env-default:"5m"`
+}
 
 type CartConfig struct {
 	TTL time.Duration `yaml:"ttl" env:"CART_TTL" env-default:"24h"`
@@ -21,14 +26,15 @@ type ServicesConfig struct {
 }
 
 type Config struct {
-	Env        string           `yaml:"env" env:"ENV" env-default:"local"`
-	GRPCServer GRPCServerConfig `yaml:"grpc_server"`
-	MongoDB    MongoDBConfig    `yaml:"mongo"`
-	Redis      RedisConfig      `yaml:"redis"`
-	NATS       NATSConfig       `yaml:"nats"`
-	Logger     LoggerConfig     `yaml:"logger"`
-	Services   ServicesConfig   `yaml:"services"`
-	Cart       CartConfig       `yaml:"cart"`
+	Env          string             `yaml:"env" env:"ENV" env-default:"local"`
+	GRPCServer   GRPCServerConfig   `yaml:"grpc_server"`
+	MongoDB      MongoDBConfig      `yaml:"mongo"`
+	Redis        RedisConfig        `yaml:"redis"`
+	NATS         NATSConfig         `yaml:"nats"`
+	Logger       LoggerConfig       `yaml:"logger"`
+	Services     ServicesConfig     `yaml:"services"`
+	Cart         CartConfig         `yaml:"cart"`
+	ProductCache ProductCacheConfig `yaml:"product_cache"`
 }
 
 type GRPCServerConfig struct {
@@ -62,6 +68,8 @@ type LoggerConfig struct {
 }
 
 func LoadConfig(path string) (*Config, error) {
+	_ = godotenv.Load()
+
 	var cfg Config
 	if path == "" {
 		err := cleanenv.ReadEnv(&cfg)

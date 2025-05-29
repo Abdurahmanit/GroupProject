@@ -19,7 +19,7 @@ type NewsMongoRepository struct {
 	db *mongo.Database
 }
 
-func NewNewsMongoRepository(client *mongo.Client, dbName string) *NewsMongoRepository {
+func NewNewsMongoRepository(client *mongo.Client, dbName string) repository.NewsRepository {
 	return &NewsMongoRepository{
 		db: client.Database(dbName),
 	}
@@ -134,13 +134,17 @@ func (r *NewsMongoRepository) Update(ctx context.Context, news *entity.News) err
 	return nil
 }
 
-func (r *NewsMongoRepository) Delete(ctx context.Context, id string) error {
+func (r *NewsMongoRepository) Delete(ctx context.Context, id string, sessionContext mongo.SessionContext) error {
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return repository.ErrNotFound
 	}
+	targetCtx := ctx
+	if sessionContext != nil {
+		targetCtx = sessionContext
+	}
 
-	res, err := r.db.Collection(newsCollectionName).DeleteOne(ctx, bson.M{"_id": objID})
+	res, err := r.db.Collection(newsCollectionName).DeleteOne(targetCtx, bson.M{"_id": objID})
 	if err != nil {
 		return fmt.Errorf("failed to delete news from mongo: %w", err)
 	}

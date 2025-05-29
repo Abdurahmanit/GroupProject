@@ -10,6 +10,10 @@ import (
 	"github.com/Abdurahmanit/GroupProject/news-service/internal/entity"
 	"github.com/Abdurahmanit/GroupProject/news-service/internal/port/cache"
 	"github.com/Abdurahmanit/GroupProject/news-service/internal/port/repository"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"go.uber.org/zap"
 )
 
@@ -20,20 +24,29 @@ type NATSPublisherInterface interface {
 }
 
 type NewsUseCase struct {
+	mongoClient   *mongo.Client
 	newsRepo      repository.NewsRepository
+	commentRepo   repository.CommentRepository
+	likeRepo      repository.LikeRepository
 	natsPublisher NATSPublisherInterface
 	cacheRepo     cache.CacheRepository
 	logger        *zap.Logger
 }
 
 func NewNewsUseCase(
+	mc *mongo.Client,
 	nr repository.NewsRepository,
+	cmr repository.CommentRepository,
+	lr repository.LikeRepository,
 	np NATSPublisherInterface,
 	cr cache.CacheRepository,
 	log *zap.Logger,
 ) *NewsUseCase {
 	return &NewsUseCase{
+		mongoClient:   mc,
 		newsRepo:      nr,
+		commentRepo:   cmr,
+		likeRepo:      lr,
 		natsPublisher: np,
 		cacheRepo:     cr,
 		logger:        log,
@@ -229,13 +242,88 @@ func (uc *NewsUseCase) UpdateNews(ctx context.Context, input UpdateNewsInput) (*
 	return news, nil
 }
 
+func (uc *NewsUseCase) DeleteNewsAndAssociatedData(ctx context.Context, newsID string) error {
+	session, err := uc.mongoClient.StartSession()
+	if err != nil {
+		uc.logger.Error("Failed to start mongo session for transaction", zap.Error(err), zap.String("news_id", newsID))
+		return fmt.Errorf("NewsUseCase.DeleteNewsAndAssociatedData: failed to start session: %w", err)
+	}
+	defer session.EndSession(ctx)
+
+	wc := writeconcern.Majority()
+	rc := readconcern.Snapshot()
+	txnOpts := options.Transaction().SetWriteConcern(wc).SetReadConcern(rc)
+
+	callback := func(sessCtx mongo.SessionContext) (interface{}, error) {
+		uc.logger.Info("Transaction callback: Attempting to delete comments", zap.String("news_id", newsID))
+		deletedCommentsCount, err := uc.commentRepo.DeleteByNewsID(sessCtx, newsID, sessCtx)
+		if err != nil {
+			uc.logger.Error("Transaction callback: Failed to delete comments", zap.Error(err), zap.String("news_id", newsID))
+			return nil, fmt.Errorf("failed to delete comments in transaction: %w", err)
+		}
+		uc.logger.Info("Transaction callback: Comments deleted", zap.Int64("count", deletedCommentsCount), zap.String("news_id", newsID))
+
+		uc.logger.Info("Transaction callback: Attempting to delete likes", zap.String("news_id", newsID))
+		deletedLikesCount, err := uc.likeRepo.DeleteByContentID(sessCtx, ContentTypeNews, newsID, sessCtx)
+		if err != nil {
+			uc.logger.Error("Transaction callback: Failed to delete likes", zap.Error(err), zap.String("news_id", newsID))
+			return nil, fmt.Errorf("failed to delete likes in transaction: %w", err)
+		}
+		uc.logger.Info("Transaction callback: Likes deleted", zap.Int64("count", deletedLikesCount), zap.String("news_id", newsID))
+
+		uc.logger.Info("Transaction callback: Attempting to delete news", zap.String("news_id", newsID))
+		err = uc.newsRepo.Delete(sessCtx, newsID, sessCtx)
+		if err != nil {
+			if errors.Is(err, repository.ErrNotFound) {
+				uc.logger.Warn("Transaction callback: News not found for deletion", zap.String("news_id", newsID))
+			} else {
+				uc.logger.Error("Transaction callback: Failed to delete news", zap.Error(err), zap.String("news_id", newsID))
+			}
+			return nil, fmt.Errorf("failed to delete news in transaction: %w", err)
+		}
+		uc.logger.Info("Transaction callback: News deleted", zap.String("news_id", newsID))
+		return nil, nil
+	}
+
+	_, err = session.WithTransaction(ctx, callback, txnOpts)
+	if err != nil {
+		uc.logger.Error("Transaction to delete news and associated data failed", zap.Error(err), zap.String("news_id", newsID))
+		if errors.Is(err, repository.ErrNotFound) {
+			return repository.ErrNotFound
+		}
+		return fmt.Errorf("NewsUseCase.DeleteNewsAndAssociatedData: transaction failed: %w", err)
+	}
+
+	uc.logger.Info("Successfully deleted news and associated data in transaction", zap.String("news_id", newsID))
+
+	if uc.cacheRepo != nil {
+		key := newsCacheKey(newsID)
+		if delErr := uc.cacheRepo.Delete(ctx, key); delErr != nil {
+			uc.logger.Warn("Failed to delete news from cache after transactional delete",
+				zap.Error(delErr),
+				zap.String("key", key),
+			)
+		}
+	}
+
+	if uc.natsPublisher != nil {
+		if errPub := uc.natsPublisher.PublishNewsDeleted(ctx, newsID); errPub != nil {
+			uc.logger.Warn("Failed to publish NATS event for news deleted after transaction",
+				zap.Error(errPub),
+				zap.String("news_id", newsID),
+			)
+		}
+	}
+	return nil
+}
+
 func (uc *NewsUseCase) DeleteNews(ctx context.Context, id string) error {
 	_, err := uc.GetNewsByID(ctx, id)
 	if err != nil {
 		return fmt.Errorf("NewsUseCase.DeleteNews: news to delete not found or error getting it: %w", err)
 	}
 
-	err = uc.newsRepo.Delete(ctx, id)
+	err = uc.newsRepo.Delete(ctx, id, nil)
 	if err != nil {
 		if !errors.Is(err, repository.ErrNotFound) {
 			uc.logger.Error("Failed to delete news from repository", zap.Error(err), zap.String("news_id", id))
@@ -313,7 +401,7 @@ func (uc *NewsUseCase) ListNewsByCategory(ctx context.Context, input ListNewsByC
 	}
 	if input.Category == "" {
 		uc.logger.Warn("Listing news by empty category, will fetch all if category filter is not strictly enforced by DB")
-		delete(filter, "category") // Или вернуть ошибку, если категория обязательна
+		delete(filter, "category")
 	}
 
 	newsList, total, err := uc.newsRepo.List(ctx, input.Page, input.PageSize, filter)

@@ -19,7 +19,7 @@ type CommentMongoRepository struct {
 	db *mongo.Database
 }
 
-func NewCommentMongoRepository(client *mongo.Client, dbName string) *CommentMongoRepository {
+func NewCommentMongoRepository(client *mongo.Client, dbName string) repository.CommentRepository {
 	return &CommentMongoRepository{
 		db: client.Database(dbName),
 	}
@@ -173,4 +173,17 @@ func (r *CommentMongoRepository) Delete(ctx context.Context, id string) error {
 		return repository.ErrNotFound
 	}
 	return nil
+}
+
+func (r *CommentMongoRepository) DeleteByNewsID(ctx context.Context, newsID string, sessionContext mongo.SessionContext) (int64, error) {
+	targetCtx := ctx
+	if sessionContext != nil {
+		targetCtx = sessionContext
+	}
+	filter := bson.M{"news_id": newsID}
+	res, err := r.db.Collection(commentCollectionName).DeleteMany(targetCtx, filter)
+	if err != nil {
+		return 0, fmt.Errorf("failed to delete comments by news_id from mongo: %w", err)
+	}
+	return res.DeletedCount, nil
 }
