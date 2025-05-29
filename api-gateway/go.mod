@@ -4,7 +4,7 @@ go 1.23.4
 
 require (
 	github.com/Abdurahmanit/GroupProject/listing-service v0.0.0
-	github.com/Abdurahmanit/GroupProject/user-service v0.0.0-20250518101435-6cde4069e94a
+	github.com/Abdurahmanit/GroupProject/user-service v0.0.0-20250529084109-7ff84cdde742
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/spf13/viper v1.20.1
