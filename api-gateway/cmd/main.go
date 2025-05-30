@@ -10,9 +10,6 @@ import (
 	"github.com/Abdurahmanit/GroupProject/api-gateway/internal/middleware"
 	"github.com/Abdurahmanit/GroupProject/api-gateway/internal/router"
 
-	// Вам не нужно импортировать reviewPb здесь, если reviewHandler принимает *grpc.ClientConn
-	// и создает ReviewServiceClient внутри себя, как это делают userHandler и listingHandler.
-
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -34,9 +31,6 @@ func main() {
 		logger.Fatal("Failed to load API Gateway config", zap.Error(err))
 	}
 
-	// --- gRPC Client Connections ---
-
-	// Подключение к User Service
 	userConnAddr := fmt.Sprintf("%s:%d", cfg.UserServiceHost, cfg.UserServicePort)
 	userConn, err := grpc.NewClient(userConnAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -64,20 +58,15 @@ func main() {
 	logger.Info("Successfully connected to Review Service", zap.String("address", reviewConnAddr))
 
 	// Инициализация обработчиков (сохраняем существующий стиль)
-	userHandler := handler.NewUserHandler(userConn, logger)          // Существующий код
-	listingHandler := handler.NewListingHandler(listingConn, logger) // Существующий код
-	reviewHandler := handler.NewReviewHandler(reviewConn, logger)    // Новый обработчик, принимает *grpc.ClientConn
+	userHandler := handler.NewUserHandler(userConn, logger)
+	listingHandler := handler.NewListingHandler(listingConn, logger)
+	reviewHandler := handler.NewReviewHandler(reviewConn, logger)
 
-	// Настройка основного роутера
 	r := chi.NewRouter()
-	// Применение общих middleware
-	r.Use(middleware.Logger(logger)) // Zap logger middleware
-	// r.Use(middleware.Cors())      // CORS удален по вашему запросу
-
-	// Настройка маршрутов
+	r.Use(middleware.Logger(logger))
 	router.SetupUserRoutes(r, userHandler, cfg.JWTSecret)
 	router.SetupListingRoutes(r, listingHandler, cfg.JWTSecret)
-	router.SetupReviewRoutes(r, reviewHandler, cfg.JWTSecret) // Новые маршруты для Review Service
+	router.SetupReviewRoutes(r, reviewHandler, cfg.JWTSecret)
 
 	// Запуск HTTP сервера
 	httpServerAddr := fmt.Sprintf(":%d", cfg.Port)
