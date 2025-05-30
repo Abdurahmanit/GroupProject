@@ -29,9 +29,6 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/health"
-	"google.golang.org/grpc/health/grpc_health_v1"
-	"google.golang.org/grpc/reflection"
 )
 
 const (
@@ -133,14 +130,6 @@ func main() {
 	grpcSrv := grpcAdapter.NewGRPCServer(appLogger, cfg.JWTSecret, tp) // This now returns *grpc.Server
 	pb.RegisterReviewServiceServer(grpcSrv, reviewGRPCHandler)
 
-	// Register reflection service on gRPC server (optional, useful for tools like grpcurl).
-	reflection.Register(grpcSrv)
-
-	// Register gRPC Health Checking Protocol service.
-	healthServer := health.NewServer()
-	grpc_health_v1.RegisterHealthServer(grpcSrv, healthServer)
-	healthServer.SetServingStatus(serviceName, grpc_health_v1.HealthCheckResponse_SERVING) // Initial status
-
 	go func() {
 		appLogger.Info("Starting gRPC server", zap.String("port", cfg.GRPCPort))
 		if err := grpcSrv.Serve(lis); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
@@ -168,16 +157,11 @@ func main() {
 	sig := <-quit
 	appLogger.Info("Received shutdown signal", zap.String("signal", sig.String()))
 
-	// Set health status to NOT_SERVING
-	healthServer.SetServingStatus(serviceName, grpc_health_v1.HealthCheckResponse_NOT_SERVING)
 	appLogger.Info("gRPC health status set to NOT_SERVING")
 
 	// Gracefully stop the gRPC server
 	appLogger.Info("Shutting down gRPC server...")
-	// The NewGRPCServer does not return a cleanup func anymore, direct stop.
 	grpcSrv.GracefulStop()
 	appLogger.Info("gRPC server stopped.")
-
 	appLogger.Info("Application shutting down...")
-	// Other deferred cleanups (MongoDB, NATS, Tracer) will execute now.
 }
