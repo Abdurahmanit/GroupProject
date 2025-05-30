@@ -73,10 +73,6 @@ func NewMetricsManager(serviceName string) *MetricsManager {
 	}
 }
 
-// StartMetricsServer starts an HTTP server to expose Prometheus metrics.
-// port: The port number for the metrics server (e.g., "9093").
-// logger: Application logger.
-// registry: The Prometheus registry to use for the handler.
 func StartMetricsServer(port string, appLogger *logger.Logger, registry *prometheus.Registry) error {
 	if port == "" {
 		appLogger.Info("Prometheus metrics server port not configured, server will not start.")
@@ -84,8 +80,6 @@ func StartMetricsServer(port string, appLogger *logger.Logger, registry *prometh
 	}
 
 	mux := http.NewServeMux()
-	// Use promhttp.HandlerFor to specify the registry.
-	// If using prometheus.DefaultRegisterer, promhttp.Handler() is sufficient.
 	mux.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 
 	appLogger.Info("Prometheus metrics server starting", zap.String("port", port), zap.String("path", "/metrics"))

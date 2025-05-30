@@ -7,34 +7,28 @@ import (
 
 	"github.com/Abdurahmanit/GroupProject/review-service/internal/platform/logger"
 	"github.com/golang-jwt/jwt/v5"
-	"go.uber.org/zap" // Import zap
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
-// UserIDKeyType is a custom type for the user ID context key to avoid collisions.
 type UserIDKeyType string
 
-// UserRoleKeyType is a custom type for the user role context key.
 type UserRoleKeyType string
 
 const (
-	// UserIDKey is the key used to store and retrieve the authenticated UserID from the context.
-	UserIDKey UserIDKeyType = "authenticatedUserID"
-	// UserRoleKey is the key used to store and retrieve the authenticated user's role from the context.
+	UserIDKey   UserIDKeyType   = "authenticatedUserID"
 	UserRoleKey UserRoleKeyType = "authenticatedUserRole"
 )
 
-// Claims defines the structure of the JWT claims expected from the token.
 type Claims struct {
 	UserID string `json:"user_id"`
 	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 
-// AuthInterceptor creates a gRPC unary server interceptor for authentication and basic authorization.
 func AuthInterceptor(jwtSecret string, log *logger.Logger, publicMethods map[string]bool, requiredRoles map[string][]string) grpc.UnaryServerInterceptor {
 	return func(
 		ctx context.Context,
@@ -101,11 +95,8 @@ func AuthInterceptor(jwtSecret string, log *logger.Logger, publicMethods map[str
 			log.Error("AuthInterceptor: UserID not found in token claims", zap.String("method", info.FullMethod))
 			return nil, status.Errorf(codes.Unauthenticated, "UserID not found in token claims")
 		}
-		// Role check is important for authorization logic that follows
 		if claims.Role == "" {
 			log.Warn("AuthInterceptor: Role not found in token claims, proceeding with caution", zap.String("method", info.FullMethod), zap.String("user_id", claims.UserID))
-			// Potentially deny access if role is mandatory for all authenticated routes
-			// return nil, status.Errorf(codes.PermissionDenied, "Role not found in token claims, access denied")
 		}
 
 		if roles, methodRequiresRoles := requiredRoles[info.FullMethod]; methodRequiresRoles {

@@ -9,9 +9,9 @@ import (
 
 // LoggerConfig holds configuration for the logger.
 type LoggerConfig struct {
-	Level      string // e.g., "debug", "info", "warn", "error"
-	Format     string // e.g., "json", "console" (text)
-	OutputFile string // e.g., "stdout", "stderr", or a file path like "logs/review-service.log"
+	Level      string
+	Format     string
+	OutputFile string
 }
 
 // getEnv is a helper to read an environment variable or return a default value.

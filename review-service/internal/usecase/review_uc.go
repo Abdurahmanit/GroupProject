@@ -58,18 +58,11 @@ func (uc *ReviewUsecase) CreateReview(ctx context.Context, userID, productID, se
 	if rating < 1 || rating > 5 {
 		return nil, fmt.Errorf("%w: rating must be between 1 and 5", domain.ErrInvalidInput)
 	}
-	// Comment length validation could be added here or in domain.NewReview
-
-	// Check for existing review by this user for this product/seller (if business rule applies)
-	// This requires a repository method like FindByUserIDAndTargetID
-	// For now, assuming the unique index in MongoDB handles this and returns domain.ErrReviewAlreadyExists
-
 	review, err := domain.NewReview(userID, productID, sellerID, comment, rating)
 	if err != nil {
 		uc.logger.Error("Failed to create new domain review instance", zap.Error(err))
 		return nil, fmt.Errorf("%w: %v", domain.ErrInvalidInput, err)
 	}
-	// Default status is set by domain.NewReview (e.g., Pending)
 
 	err = uc.repo.Create(ctx, review)
 	if err != nil {
@@ -92,7 +85,6 @@ func (uc *ReviewUsecase) CreateReview(ctx context.Context, userID, productID, se
 	}
 	if err := uc.natsPub.Publish(ctx, "review.created", eventData); err != nil {
 		uc.logger.Warn("Failed to publish review.created event to NATS", zap.Error(err), zap.String("review_id", review.ID.Hex()))
-		// Non-critical error, review is created, but event not published. Log and continue.
 	}
 
 	uc.logger.Info("Review created successfully", zap.String("review_id", review.ID.Hex()))
@@ -110,8 +102,6 @@ func (uc *ReviewUsecase) GetReview(ctx context.Context, reviewID primitive.Objec
 	return review, nil
 }
 
-// UpdateReview allows a user to update their own review (comment/rating).
-// Only the author of the review can update it, and only if it's not heavily moderated.
 func (uc *ReviewUsecase) UpdateReview(ctx context.Context, reviewID primitive.ObjectID, userID string, rating *int32, comment *string) (*domain.Review, error) {
 	uc.logger.Info("Updating review",
 		zap.String("review_id", reviewID.Hex()),
@@ -127,11 +117,6 @@ func (uc *ReviewUsecase) UpdateReview(ctx context.Context, reviewID primitive.Ob
 		return nil, domain.ErrForbidden
 	}
 
-	// Business rule: Maybe only 'approved' or 'pending' reviews can be updated by the user.
-	// if review.Status == domain.ReviewStatusRejected || review.Status == domain.ReviewStatusHidden {
-	// 	return nil, fmt.Errorf("%w: cannot update a review that is '%s'", domain.ErrForbidden, review.Status)
-	// }
-
 	updated := false
 	if rating != nil {
 		if *rating < 1 || *rating > 5 {
@@ -143,7 +128,6 @@ func (uc *ReviewUsecase) UpdateReview(ctx context.Context, reviewID primitive.Ob
 		}
 	}
 	if comment != nil {
-		// Add comment length validation if needed
 		if review.Comment != *comment {
 			review.Comment = *comment
 			updated = true
@@ -156,10 +140,7 @@ func (uc *ReviewUsecase) UpdateReview(ctx context.Context, reviewID primitive.Ob
 	}
 
 	review.UpdatedAt = time.Now().UTC()
-	review.Version++ // Increment version for optimistic locking
-
-	// If a user updates their review, it might need to go back to pending status for re-moderation.
-	// review.Status = domain.ReviewStatusPending
+	review.Version++
 
 	err = uc.repo.Update(ctx, review)
 	if err != nil {
@@ -188,7 +169,7 @@ func (uc *ReviewUsecase) DeleteReview(ctx context.Context, reviewID primitive.Ob
 		return err
 	}
 
-	if review.UserID != userID { // Add admin role check here if admins can delete any review
+	if review.UserID != userID {
 		uc.logger.Warn("User forbidden to delete review", zap.String("review_id", reviewID.Hex()), zap.String("review_author", review.UserID), zap.String("requesting_user", userID))
 		return domain.ErrForbidden
 	}
@@ -201,8 +182,8 @@ func (uc *ReviewUsecase) DeleteReview(ctx context.Context, reviewID primitive.Ob
 	// Publish event
 	eventData := map[string]interface{}{
 		"review_id":  reviewID.Hex(),
-		"user_id":    userID,           // User who performed the delete
-		"product_id": review.ProductID, // Include product ID for context
+		"user_id":    userID,
+		"product_id": review.ProductID,
 		"deleted_at": time.Now().UTC().Format(time.RFC3339Nano),
 	}
 	uc.natsPub.Publish(ctx, "review.deleted", eventData)
@@ -235,7 +216,6 @@ func (uc *ReviewUsecase) ListReviewsByProduct(ctx context.Context, productID str
 		}
 		filter.Status = &s
 	} else {
-		// Default to only showing approved reviews for public listings
 		approvedStatus := domain.ReviewStatusApproved
 		filter.Status = &approvedStatus
 	}
@@ -258,16 +238,11 @@ func (uc *ReviewUsecase) ListReviewsByUser(ctx context.Context, userID string, p
 	return uc.repo.FindByUserID(ctx, userID, filter)
 }
 
-// ModerateReview allows an admin to change the status of a review.
-// Assumes admin authorization (role check) is handled by the gRPC auth interceptor or here.
 func (uc *ReviewUsecase) ModerateReview(ctx context.Context, reviewID primitive.ObjectID, adminUserID string, newStatus domain.ReviewStatus, moderationComment string) (*domain.Review, error) {
 	uc.logger.Info("Moderating review",
 		zap.String("review_id", reviewID.Hex()),
 		zap.String("admin_user_id", adminUserID),
 		zap.String("new_status", string(newStatus)))
-
-	// Here, you might fetch the adminUser to verify their role if not done by interceptor.
-	// For simplicity, assuming adminUserID is validated as an admin.
 
 	if !newStatus.IsValid() {
 		return nil, fmt.Errorf("%w: invalid new status '%s'", domain.ErrInvalidInput, newStatus)
@@ -280,7 +255,7 @@ func (uc *ReviewUsecase) ModerateReview(ctx context.Context, reviewID primitive.
 
 	if review.Status == newStatus && review.ModerationComment == moderationComment {
 		uc.logger.Info("No change in status or moderation comment for review", zap.String("review_id", reviewID.Hex()))
-		return review, nil // No actual change
+		return review, nil
 	}
 
 	oldStatus := review.Status

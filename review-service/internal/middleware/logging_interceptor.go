@@ -1,16 +1,12 @@
 package middleware
 
-// Definitions for UserIDKeyType, UserRoleKeyType, UserIDKey, UserRoleKey, Claims, and AuthInterceptor
-// have been REMOVED from this file as they are defined in auth_interceptor.go
-// and should not be duplicated within the same package.
-
 import (
 	"context"
 	"time"
 
-	"github.com/Abdurahmanit/GroupProject/review-service/internal/platform/logger" // Adjust path if necessary
+	"github.com/Abdurahmanit/GroupProject/review-service/internal/platform/logger"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap" // Import zap
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 )

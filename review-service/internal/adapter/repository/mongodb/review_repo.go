@@ -43,8 +43,6 @@ func NewReviewRepository(db *mongo.Database, log *logger.Logger) (*ReviewReposit
 	_, err := collection.Indexes().CreateMany(ctx, indexes)
 	if err != nil {
 		log.Error("Failed to create indexes for reviews collection", zap.Error(err))
-		// Don't necessarily fail startup, as indexes might already exist or be created manually.
-		// return nil, fmt.Errorf("failed to create indexes for %s: %w", reviewCollectionName, err)
 	} else {
 		log.Info("Successfully ensured indexes for reviews collection")
 	}
@@ -64,22 +62,22 @@ func (r *ReviewRepository) Create(ctx context.Context, review *domain.Review) er
 		r.logger.Error("Failed to convert domain.Review to document for Create", zap.Error(err))
 		return err
 	}
-	if doc.ID.IsZero() { // Ensure ID is set if not already
+	if doc.ID.IsZero() {
 		doc.ID = primitive.NewObjectID()
 	}
-	review.ID = doc.ID // Update domain entity with generated/confirmed ID
+	review.ID = doc.ID
 
 	now := time.Now().UTC()
 	doc.CreatedAt = now
 	doc.UpdatedAt = now
-	review.CreatedAt = now // Ensure domain model has timestamps
+	review.CreatedAt = now
 	review.UpdatedAt = now
 
 	_, err = r.collection.InsertOne(ctx, doc)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
 			r.logger.Warn("Duplicate key error on review creation", zap.Error(err))
-			return domain.ErrReviewAlreadyExists // Use domain-specific error
+			return domain.ErrReviewAlreadyExists
 		}
 		r.logger.Error("Failed to insert review into DB", zap.Error(err))
 		return fmt.Errorf("db insert failed: %w", err)
@@ -117,9 +115,8 @@ func (r *ReviewRepository) Update(ctx context.Context, review *domain.Review) er
 		return err
 	}
 	doc.UpdatedAt = time.Now().UTC()
-	review.UpdatedAt = doc.UpdatedAt // Sync domain model
+	review.UpdatedAt = doc.UpdatedAt
 
-	// Construct update document to only set fields that are typically updatable
 	updatePayload := bson.M{
 		"$set": bson.M{
 			"rating":             doc.Rating,
@@ -160,7 +157,6 @@ func (r *ReviewRepository) Delete(ctx context.Context, id primitive.ObjectID) er
 	return nil
 }
 
-// FindByProductID retrieves reviews for a specific product, with pagination and optional status filter.
 func (r *ReviewRepository) FindByProductID(ctx context.Context, productID string, filter domain.ReviewFilter) ([]*domain.Review, int64, error) {
 	r.logger.Debug("Finding reviews by product_id from DB", zap.String("product_id", productID), zap.Any("filter", filter))
 
@@ -210,7 +206,6 @@ func (r *ReviewRepository) FindByUserID(ctx context.Context, userID string, filt
 	r.logger.Debug("Finding reviews by user_id from DB", zap.String("user_id", userID), zap.Any("filter", filter))
 
 	mongoQuery := bson.M{"user_id": userID}
-	// Could add status filter here too if needed for "my reviews" page
 	if filter.Status != nil {
 		mongoQuery["status"] = *filter.Status
 	}
