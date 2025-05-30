@@ -111,7 +111,7 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *entity.User) (pri
 		return primitive.NilObjectID, err
 	}
 
-	dbUser := fromEntity(user) // entity.User has IsEmailVerified: false and EmailVerifiedAt: nil by default from usecase
+	dbUser := fromEntity(user)
 	dbUser.Password = string(hashedPassword)
 	if dbUser.ID.IsZero() {
 		dbUser.ID = primitive.NewObjectID()
@@ -119,11 +119,10 @@ func (r *UserRepository) CreateUser(ctx context.Context, user *entity.User) (pri
 	now := time.Now()
 	dbUser.CreatedAt = now
 	dbUser.UpdatedAt = now
-	// Ensure these are explicitly set on dbUser if not already done by fromEntity from a pre-set entity
 	dbUser.IsEmailVerified = user.IsEmailVerified
 	dbUser.EmailVerifiedAt = user.EmailVerifiedAt
-	dbUser.EmailVerificationCode = user.EmailVerificationCode                   // Should be empty initially
-	dbUser.EmailVerificationCodeExpiresAt = user.EmailVerificationCodeExpiresAt // Should be nil initially
+	dbUser.EmailVerificationCode = user.EmailVerificationCode
+	dbUser.EmailVerificationCodeExpiresAt = user.EmailVerificationCodeExpiresAt
 
 	_, err = r.db.Collection("users").InsertOne(ctx, dbUser)
 	if err != nil {
@@ -212,7 +211,7 @@ func (r *UserRepository) UpdateUser(ctx context.Context, user *entity.User) erro
 		"role":              user.Role,
 		"is_active":         user.IsActive,
 		"updated_at":        user.UpdatedAt,
-		"is_email_verified": user.IsEmailVerified, // This will set true or false
+		"is_email_verified": user.IsEmailVerified,
 	}
 
 	// Explicitly add EmailVerifiedAt to $set if it's not nil
@@ -222,16 +221,10 @@ func (r *UserRepository) UpdateUser(ctx context.Context, user *entity.User) erro
 
 	updateDoc := bson.M{"$set": setFields}
 
-	// Prepare $unset stage for fields that should be removed or nulled
 	unsetFields := bson.M{}
 	if user.EmailVerifiedAt == nil {
-		unsetFields["email_verified_at"] = "" // Add to $unset if it's nil in the entity
+		unsetFields["email_verified_at"] = ""
 	}
-
-	// If IsEmailVerified is false (typically after an email change),
-	// ensure old verification codes are also unset.
-	// The usecase also calls SaveEmailVerificationDetails separately to clear codes
-	// when an email is changed, but this acts as a safeguard or handles other scenarios.
 	if !user.IsEmailVerified {
 		unsetFields["email_verification_code"] = ""
 		unsetFields["email_verification_code_expires_at"] = ""
@@ -410,13 +403,12 @@ func (r *UserRepository) SearchUsers(ctx context.Context, query string, skip, li
 func (r *UserRepository) SaveEmailVerificationDetails(ctx context.Context, userID primitive.ObjectID, code string, expiresAt time.Time) error {
 	r.logger.Info("Saving email verification details",
 		zap.String("userID", userID.Hex()),
-		// zap.String("code", code), // Avoid logging sensitive codes in production by default
 		zap.Time("expiresAt", expiresAt))
 
 	setFields := bson.M{"updated_at": time.Now()}
 	unsetFields := bson.M{}
 
-	if code == "" && expiresAt.IsZero() { // Clearing the code and expiry
+	if code == "" && expiresAt.IsZero() {
 		unsetFields["email_verification_code"] = ""
 		unsetFields["email_verification_code_expires_at"] = ""
 	} else { // Setting a new code and expiry
@@ -432,7 +424,7 @@ func (r *UserRepository) SaveEmailVerificationDetails(ctx context.Context, userI
 		updateDoc["$unset"] = unsetFields
 	}
 
-	if len(updateDoc) == 0 { // Should not happen if at least updated_at is set
+	if len(updateDoc) == 0 {
 		r.logger.Info("No fields to update in SaveEmailVerificationDetails", zap.String("userID", userID.Hex()))
 		return nil
 	}

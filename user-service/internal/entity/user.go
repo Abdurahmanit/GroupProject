@@ -11,13 +11,13 @@ type User struct {
 	Username                       string
 	Email                          string
 	Password                       string
-	PhoneNumber                    string // New field
+	PhoneNumber                    string
 	Role                           string // "admin", "customer"
 	IsActive                       bool
 	CreatedAt                      time.Time
 	UpdatedAt                      time.Time
 	IsEmailVerified                bool
-	EmailVerifiedAt                *time.Time // Pointer to allow null
+	EmailVerifiedAt                *time.Time
 	EmailVerificationCode          string
-	EmailVerificationCodeExpiresAt *time.Time // Pointer to allow null
+	EmailVerificationCodeExpiresAt *time.Time
 }

@@ -117,7 +117,6 @@ func (s *MailerSendService) SendEmailVerification(toEmailAddr, toName, verificat
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusAccepted {
-		// You might want to read resp.Body to get more error details from MailerSend
 		s.logger.Error("MailerSend API request failed", zap.Int("statusCode", resp.StatusCode))
 		return fmt.Errorf("MailerSend API request failed with status code %d", resp.StatusCode)
 	}

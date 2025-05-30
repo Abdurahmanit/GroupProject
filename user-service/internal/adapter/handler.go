@@ -65,10 +65,6 @@ func (h *UserHandler) Login(ctx context.Context, req *user.LoginRequest) (*user.
 		if errors.Is(err, usecase.ErrInvalidCredentials) || errors.Is(err, usecase.ErrUserInactive) {
 			return nil, status.Error(codes.Unauthenticated, err.Error())
 		}
-		// Could also check for email not verified error if login depends on it
-		// if errors.Is(err, errors.New("email not verified")) {
-		// 	return nil, status.Error(codes.FailedPrecondition, "Email not verified")
-		// }
 		return nil, status.Error(codes.Internal, "Login failed")
 	}
 	h.logger.Info("gRPC Login request processed successfully", zap.String("email", req.GetEmail()))
@@ -221,7 +217,7 @@ func (h *UserHandler) RequestEmailVerification(ctx context.Context, req *user.Re
 		h.logger.Error("Usecase failed to request email verification", zap.String("userID", req.UserId), zap.Error(err))
 		switch {
 		case errors.Is(err, usecase.ErrEmailAlreadyVerified):
-			return &user.RequestEmailVerificationResponse{Success: false, Message: err.Error()}, nil // Not an error, but a specific state
+			return &user.RequestEmailVerificationResponse{Success: false, Message: err.Error()}, nil
 		case errors.Is(err, repository.ErrUserNotFound) || errors.Is(err, usecase.ErrUserNotFound):
 			return nil, status.Error(codes.NotFound, "User not found")
 		case errors.Is(err, usecase.ErrMailerFailed):

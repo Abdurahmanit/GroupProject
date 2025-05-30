@@ -14,8 +14,8 @@ type SMTPMailerService struct {
 	port       int
 	username   string
 	password   string
-	from       string // The "From" address for the email header
-	senderName string // The display name for the sender
+	from       string
+	senderName string
 	logger     *zap.Logger
 }
 
@@ -41,8 +41,6 @@ func (s *SMTPMailerService) SendEmailVerification(toEmailAddr, toName, verificat
 
 	subject := "Verify Your Email Address"
 
-	// Construct email body (HTML and Plain Text)
-	// For simplicity, reusing the same content logic
 	htmlBodyContent := fmt.Sprintf(`<p>Hello %s,</p>
                              <p>Your verification code is: <b>%s</b></p>
                              <p>This code will expire in 15 minutes.</p>
@@ -53,8 +51,6 @@ func (s *SMTPMailerService) SendEmailVerification(toEmailAddr, toName, verificat
                            This code will expire in 15 minutes.
                            If you did not request this, please ignore this email.`, toName, verificationCode)
 
-	// Setup SMTP authentication
-	// The address for smtp.PlainAuth should be "host:port", but for smtp.SendMail it's just "host:port"
 	auth := smtp.PlainAuth("", s.username, s.password, s.host)
 
 	// Email headers
@@ -69,7 +65,7 @@ func (s *SMTPMailerService) SendEmailVerification(toEmailAddr, toName, verificat
 	headers["MIME-Version"] = "1.0"
 
 	// Constructing a multipart message
-	boundary := "my-boundary-12345" // Can be any unique string
+	boundary := "my-boundary-12345"
 	headers["Content-Type"] = fmt.Sprintf("multipart/alternative; boundary=%s", boundary)
 
 	var msgBuilder strings.Builder
@@ -78,7 +74,7 @@ func (s *SMTPMailerService) SendEmailVerification(toEmailAddr, toName, verificat
 	for k, v := range headers {
 		msgBuilder.WriteString(fmt.Sprintf("%s: %s\r\n", k, v))
 	}
-	msgBuilder.WriteString("\r\n") // Empty line separates headers from body
+	msgBuilder.WriteString("\r\n")
 
 	// Plain text part
 	msgBuilder.WriteString(fmt.Sprintf("--%s\r\n", boundary))
