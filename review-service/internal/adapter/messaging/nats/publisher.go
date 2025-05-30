@@ -4,23 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time" // Added for nats.Timeout
+	"time"
 
-	"github.com/Abdurahmanit/GroupProject/review-service/internal/platform/logger" // Adjust path if necessary
+	"github.com/Abdurahmanit/GroupProject/review-service/internal/platform/logger"
 	"github.com/nats-io/nats.go"
-	"go.opentelemetry.io/otel" // Required for NATSHeaderCarrier
-	"go.uber.org/zap"          // Import zap
+	"go.opentelemetry.io/otel"
+	"go.uber.org/zap"
 )
 
 var tracer = otel.Tracer("review-service/nats-publisher")
 
-// Publisher handles publishing messages to NATS.
 type Publisher struct {
 	conn   *nats.Conn
 	logger *logger.Logger
 }
 
-// NewPublisher creates a new NATS publisher.
 func NewPublisher(url string, log *logger.Logger, appName string) (*Publisher, error) {
 	log.Info("NATS Publisher: connecting...", zap.String("url", url))
 
@@ -28,7 +26,7 @@ func NewPublisher(url string, log *logger.Logger, appName string) (*Publisher, e
 		nats.Name(fmt.Sprintf("%s NATS Publisher", appName)),
 		nats.Timeout(10 * time.Second), // Example timeout
 		nats.ErrorHandler(func(nc *nats.Conn, sub *nats.Subscription, err error) {
-			log.Error("NATS error", zap.Stringp("subject", &sub.Subject), zap.Error(err)) // Use zap.Stringp for potentially nil subject
+			log.Error("NATS error", zap.Stringp("subject", &sub.Subject), zap.Error(err))
 		}),
 		nats.ClosedHandler(func(nc *nats.Conn) {
 			log.Info("NATS connection closed")
@@ -54,8 +52,6 @@ func NewPublisher(url string, log *logger.Logger, appName string) (*Publisher, e
 	}, nil
 }
 
-// Publish sends a message to the specified NATS subject.
-// It injects OpenTelemetry trace context into the message headers.
 func (p *Publisher) Publish(ctx context.Context, subject string, data interface{}) error {
 	_, span := tracer.Start(ctx, fmt.Sprintf("NATS.Publish.%s", subject))
 	defer span.End()
@@ -74,7 +70,6 @@ func (p *Publisher) Publish(ctx context.Context, subject string, data interface{
 	msg.Header = make(nats.Header) // nats.Header is map[string][]string
 
 	propagator := otel.GetTextMapPropagator()
-	// Correct way to inject into nats.Header (which is http.Header alias)
 	propagator.Inject(ctx, NATSHeaderCarrier(msg.Header))
 
 	err = p.conn.PublishMsg(msg)
@@ -88,27 +83,18 @@ func (p *Publisher) Publish(ctx context.Context, subject string, data interface{
 	return nil
 }
 
-// NATSHeaderCarrier adapts nats.Header (which is an alias for http.Header) to be a TextMapCarrier.
-type NATSHeaderCarrier nats.Header // Note: nats.Header is an alias for http.Header
+type NATSHeaderCarrier nats.Header
 
-// Get returns the value associated with the passed key.
-// It is used by the OpenTelemetry propagator to extract context.
 func (c NATSHeaderCarrier) Get(key string) string {
 	return nats.Header(c).Get(key)
 }
 
-// Set stores the key-value pair.
-// It is used by the OpenTelemetry propagator to inject context.
 func (c NATSHeaderCarrier) Set(key string, value string) {
 	nats.Header(c).Set(key, value)
 }
 
-// Keys returns a slice of all keys in the carrier.
-// It is used by the OpenTelemetry propagator.
 func (c NATSHeaderCarrier) Keys() []string {
 	keys := make([]string, 0, len(c))
-	// http.Header is map[string][]string. The propagator expects keys to be unique.
-	// The default TextMapPropagator (TraceContext and Baggage) uses specific keys.
 	for k := range c {
 		keys = append(keys, k)
 	}

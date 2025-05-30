@@ -11,28 +11,23 @@ import (
 	"syscall"
 	"time"
 
-	// Adapters
 	grpcAdapter "github.com/Abdurahmanit/GroupProject/review-service/internal/adapter/grpc"
 	natsAdapter "github.com/Abdurahmanit/GroupProject/review-service/internal/adapter/messaging/nats"
 	mongoRepo "github.com/Abdurahmanit/GroupProject/review-service/internal/adapter/repository/mongodb"
 
-	// Config
 	"github.com/Abdurahmanit/GroupProject/review-service/internal/config"
-	// Domain & Usecase
-	"github.com/Abdurahmanit/GroupProject/review-service/internal/usecase"
-	// Platform
 	"github.com/Abdurahmanit/GroupProject/review-service/internal/platform/logger"
 	"github.com/Abdurahmanit/GroupProject/review-service/internal/platform/metrics"
 	"github.com/Abdurahmanit/GroupProject/review-service/internal/platform/tracer"
+	"github.com/Abdurahmanit/GroupProject/review-service/internal/usecase"
 
-	// Proto
 	pb "github.com/Abdurahmanit/GroupProject/review-service"
 
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.uber.org/zap" // Import zap for zap.String, zap.Error etc.
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -44,15 +39,13 @@ const (
 )
 
 func main() {
-	// Load .env file (optional, for local development)
 	if err := godotenv.Load(); err != nil {
-		// Use a standard logger temporarily if custom logger isn't initialized yet
 		fmt.Printf("INFO: .env file not found or error loading: %v. Relying on OS environment variables.\n", err)
 	}
 
 	// 1. Initialize Logger
-	appLogger := logger.NewLogger()                                                    // Uses environment variables for config (LOG_LEVEL, LOG_FORMAT)
-	appLogger.Info("Application starting...", zap.String("service_name", serviceName)) // Corrected
+	appLogger := logger.NewLogger()
+	appLogger.Info("Application starting...", zap.String("service_name", serviceName))
 
 	// 2. Load Configuration
 	cfg, err := config.LoadConfig(appLogger) // Pass logger to config loading
