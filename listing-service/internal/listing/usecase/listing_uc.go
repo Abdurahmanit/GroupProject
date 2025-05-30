@@ -131,6 +131,11 @@ func (uc *ListingUsecase) DeleteListing(ctx context.Context, id, userID string) 
 	if err != nil {
 		uc.logger.Error("ListingUsecase.DeleteListing: failed to delete listing in repo", "listing_id", id, "error", err.Error())
 	}
+
+	// err = uc.repo.DeleteListingWithFavoritesTx(ctx, id,userID)
+	// if err != nil {
+	// 	uc.logger.Error("ListingUsecase.DeleteListing: failed to delete listing in repo", "listing_id", id, "error", err.Error())
+	// }
 	return err
 }
 

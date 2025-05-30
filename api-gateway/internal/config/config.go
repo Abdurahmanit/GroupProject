@@ -1,36 +1,49 @@
 package config
 
 import (
+	"log" // Using log for simplicity in config loading status/errors
+
 	"github.com/spf13/viper"
 )
 
-// Config структура для хранения конфигурации API Gateway
 type Config struct {
 	Port               int    `mapstructure:"PORT"`
 	UserServiceHost    string `mapstructure:"USER_SERVICE_HOST"`
 	UserServicePort    int    `mapstructure:"USER_SERVICE_PORT"`
 	ListingServiceHost string `mapstructure:"LISTING_SERVICE_HOST"`
 	ListingServicePort int    `mapstructure:"LISTING_SERVICE_PORT"`
+	ReviewServiceHost  string `mapstructure:"REVIEW_SERVICE_HOST"`
+	ReviewServicePort  int    `mapstructure:"REVIEW_SERVICE_PORT"`
 	JWTSecret          string `mapstructure:"JWT_SECRET"`
-	// Добавь сюда хосты и порты для других сервисов по мере их подключения
 }
 
-// LoadConfig загружает конфигурацию из .env файла и переменных окружения
 func LoadConfig() (*Config, error) {
-	// Явное указание Viper'у на переменные окружения
-	viper.BindEnv("port", "PORT")
-	viper.BindEnv("user_service_host", "USER_SERVICE_HOST")
-	viper.BindEnv("user_service_port", "USER_SERVICE_PORT")
-	viper.BindEnv("listing_service_host", "LISTING_SERVICE_HOST")
-	viper.BindEnv("listing_service_port", "LISTING_SERVICE_PORT")
-	viper.BindEnv("jwt_secret", "JWT_SECRET")
-	// Добавь сюда BindEnv для других сервисов
+	viper.SetConfigName(".env")
+	viper.SetConfigType("env")
+	viper.AddConfigPath(".")
+	if err := viper.ReadInConfig(); err != nil {
+		log.Printf("Info: Error reading .env config file: %s. Will rely on OS environment variables if set.\n", err)
+	}
 
-	viper.AutomaticEnv() // Позволяет Viper также подхватывать другие переменные окружения
+	viper.BindEnv("PORT", "PORT")
+	viper.BindEnv("USER_SERVICE_HOST", "USER_SERVICE_HOST")
+	viper.BindEnv("USER_SERVICE_PORT", "USER_SERVICE_PORT")
+	viper.BindEnv("LISTING_SERVICE_HOST", "LISTING_SERVICE_HOST")
+	viper.BindEnv("LISTING_SERVICE_PORT", "LISTING_SERVICE_PORT")
+	viper.BindEnv("REVIEW_SERVICE_HOST") // New
+	viper.BindEnv("REVIEW_SERVICE_PORT")
+	viper.BindEnv("JWT_SECRET", "JWT_SECRET")
+	viper.AutomaticEnv()
 
 	var cfg Config
 	if err := viper.Unmarshal(&cfg); err != nil {
 		return nil, err
+	}
+
+	log.Printf("API Gateway configuration loaded. PORT resolved to: %d\n", cfg.Port)
+
+	if cfg.Port == 0 {
+		log.Println("Warning: API Gateway PORT is 0 after loading configuration. Please check your .env file and environment variable settings for 'PORT'.")
 	}
 
 	return &cfg, nil
