@@ -1,0 +1,204 @@
+syntax = "proto3";
+
+package user;
+
+option go_package = "./internal/clients/usergrpc;usergrpc";
+
+service UserService {
+  rpc Register (RegisterRequest) returns (RegisterResponse);
+  rpc Login (LoginRequest) returns (LoginResponse);
+  rpc Logout (LogoutRequest) returns (LogoutResponse);
+  rpc GetProfile (GetProfileRequest) returns (GetProfileResponse);
+  rpc UpdateProfile (UpdateProfileRequest) returns (UpdateProfileResponse);
+  rpc ChangePassword (ChangePasswordRequest) returns (ChangePasswordResponse);
+  rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
+  rpc DeactivateUser (DeactivateUserRequest) returns (DeactivateUserResponse);
+
+  // Email Verification RPCs
+  rpc RequestEmailVerification(RequestEmailVerificationRequest) returns (RequestEmailVerificationResponse);
+  rpc VerifyEmail(VerifyEmailRequest) returns (VerifyEmailResponse);
+  rpc CheckEmailVerificationStatus(CheckEmailVerificationStatusRequest) returns (CheckEmailVerificationStatusResponse);
+
+  // Admin methods
+  rpc AdminDeleteUser (AdminDeleteUserRequest) returns (AdminDeleteUserResponse);
+  rpc AdminListUsers (AdminListUsersRequest) returns (AdminListUsersResponse);
+  rpc AdminSearchUsers (AdminSearchUsersRequest) returns (AdminSearchUsersResponse);
+  rpc AdminUpdateUserRole (AdminUpdateUserRoleRequest) returns (AdminUpdateUserRoleResponse);
+  rpc AdminSetUserActiveStatus (AdminSetUserActiveStatusRequest) returns (AdminSetUserActiveStatusResponse);
+}
+
+message RegisterRequest {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+  string phone_number = 4;
+}
+
+message RegisterResponse {
+  string user_id = 1;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string token = 1;
+}
+
+message LogoutRequest {
+  string user_id = 1;
+}
+
+message LogoutResponse {
+  bool success = 1;
+}
+
+message GetProfileRequest {
+  string user_id = 1;
+}
+
+message GetProfileResponse {
+  string user_id = 1;
+  string username = 2;
+  string email = 3;
+  string phone_number = 4;
+  string role = 5;
+  bool is_active = 6;
+  string created_at = 7;   // RFC3339
+  string updated_at = 8;   // RFC3339
+  bool is_email_verified = 9;
+  string email_verified_at = 10; // RFC3339, empty if not verified
+}
+
+message UpdateProfileRequest {
+  string user_id = 1;
+  string username = 2;
+  string email = 3;
+  string phone_number = 4;
+}
+
+message UpdateProfileResponse {
+  bool success = 1;
+}
+
+message ChangePasswordRequest {
+  string user_id = 1;
+  string old_password = 2;
+  string new_password = 3;
+}
+
+message ChangePasswordResponse {
+  bool success = 1;
+}
+
+message DeleteUserRequest {
+  string user_id = 1;
+}
+
+message DeleteUserResponse {
+  bool success = 1;
+}
+
+message DeactivateUserRequest {
+  string user_id = 1;
+}
+
+message DeactivateUserResponse {
+  bool success = 1;
+}
+
+// Email Verification Messages
+message RequestEmailVerificationRequest {
+  string user_id = 1;
+}
+
+message RequestEmailVerificationResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message VerifyEmailRequest {
+  string user_id = 1;
+  string code = 2;
+}
+
+message VerifyEmailResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message CheckEmailVerificationStatusRequest {
+  string user_id = 1;
+}
+
+message CheckEmailVerificationStatusResponse {
+  bool is_verified = 1;
+}
+
+
+// Admin Messages
+message AdminDeleteUserRequest {
+  string admin_id = 1;
+  string user_id_to_delete = 2;
+}
+
+message AdminDeleteUserResponse {
+  bool success = 1;
+}
+
+message AdminListUsersRequest {
+  string admin_id = 1;
+  int64 skip = 2;
+  int64 limit = 3;
+}
+
+message AdminListUsersResponse {
+  repeated User users = 1;
+}
+
+message AdminSearchUsersRequest {
+  string admin_id = 1;
+  string query = 2;
+  int64 skip = 3;
+  int64 limit = 4;
+}
+
+message AdminSearchUsersResponse {
+  repeated User users = 1;
+}
+
+message AdminUpdateUserRoleRequest {
+  string admin_id = 1;
+  string user_id_to_update = 2;
+  string role = 3;
+}
+
+message AdminUpdateUserRoleResponse {
+  bool success = 1;
+}
+
+message AdminSetUserActiveStatusRequest {
+  string admin_id = 1;
+  string user_id = 2;
+  bool is_active = 3;
+}
+
+message AdminSetUserActiveStatusResponse {
+  bool success = 1;
+}
+
+// User message used in Admin responses and potentially other services
+message User {
+  string user_id = 1;
+  string username = 2;
+  string email = 3;
+  string phone_number = 4;
+  string role = 5;
+  bool is_active = 6;
+  string created_at = 7;   // RFC3339
+  string updated_at = 8;   // RFC3339
+  bool is_email_verified = 9;
+  string email_verified_at = 10; // RFC3339, empty if not verified
+}
