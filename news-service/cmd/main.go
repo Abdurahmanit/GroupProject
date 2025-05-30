@@ -5,9 +5,12 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 
 	redisAdapter "github.com/Abdurahmanit/GroupProject/news-service/internal/adapter/cache/redis"
+	emailAdapter "github.com/Abdurahmanit/GroupProject/news-service/internal/adapter/email"
+	grpcClientAdapter "github.com/Abdurahmanit/GroupProject/news-service/internal/adapter/grpcclient"
 	mongoAdapter "github.com/Abdurahmanit/GroupProject/news-service/internal/adapter/mongo"
 	natsAdapter "github.com/Abdurahmanit/GroupProject/news-service/internal/adapter/nats"
 	"github.com/Abdurahmanit/GroupProject/news-service/internal/config"
@@ -28,6 +31,51 @@ func main() {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
+	log.Println("Attempting to forcibly override SMTP config in main...")
+	envSmtpHost := os.Getenv("NEWS_SMTP_HOST")
+	if envSmtpHost != "" {
+		cfg.SMTP.Host = envSmtpHost
+	} else if cfg.SMTP.Host == "" {
+		cfg.SMTP.Host = "smtp.gmail.com"
+	}
+
+	envSmtpPortStr := os.Getenv("NEWS_SMTP_PORT")
+	if envSmtpPortStr != "" {
+		portInt, errAtoi := strconv.Atoi(envSmtpPortStr)
+		if errAtoi == nil {
+			cfg.SMTP.Port = portInt
+		} else {
+			log.Printf("Warning: Could not parse NEWS_SMTP_PORT ('%s') in main. Using default 587.\n", envSmtpPortStr)
+			if cfg.SMTP.Port == 0 {
+				cfg.SMTP.Port = 587
+			}
+		}
+	} else if cfg.SMTP.Port == 0 {
+		cfg.SMTP.Port = 587
+	}
+
+	envSmtpUsername := os.Getenv("NEWS_SMTP_USERNAME")
+	if envSmtpUsername != "" {
+		cfg.SMTP.Username = envSmtpUsername
+	}
+	envSmtpPassword := os.Getenv("NEWS_SMTP_PASSWORD")
+	if envSmtpPassword != "" {
+		cfg.SMTP.Password = envSmtpPassword
+	}
+	envSmtpSenderEmail := os.Getenv("NEWS_SMTP_SENDER_EMAIL")
+	if envSmtpSenderEmail != "" {
+		cfg.SMTP.SenderEmail = envSmtpSenderEmail
+	}
+	log.Printf("SMTP Config in main AFTER override: Host=%s, Port=%d, Username=%s, PasswordSet=%t, SenderEmail=%s\n",
+		cfg.SMTP.Host, cfg.SMTP.Port, cfg.SMTP.Username, cfg.SMTP.Password != "", cfg.SMTP.SenderEmail)
+
+	log.Printf("DEBUG: Loaded SMTP Config: Host=%s, Port=%d, Username=%s, PasswordSet=%t, SenderEmail=%s\n",
+		cfg.SMTP.Host,
+		cfg.SMTP.Port,
+		cfg.SMTP.Username,
+		cfg.SMTP.Password != "",
+		cfg.SMTP.SenderEmail)
+
 	zapDevConfig := zap.NewDevelopmentConfig()
 	zapDevConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 
@@ -45,6 +93,8 @@ func main() {
 		zap.String("mongo_database", cfg.Mongo.Database),
 		zap.String("nats_url", cfg.NATS.URL),
 		zap.String("redis_address", cfg.Redis.Address),
+		zap.String("smtp_host", cfg.SMTP.Host),
+		zap.String("user_service_address", cfg.UserServiceAddress),
 	)
 
 	mongoClient, err := mongoAdapter.NewMongoDBConnection(&cfg.Mongo)
@@ -84,14 +134,36 @@ func main() {
 		}
 	}()
 
+	userServiceClient, err := grpcClientAdapter.NewUserServiceGRPCClient(cfg.UserServiceAddress, logger)
+	if err != nil {
+		logger.Fatal("Failed to create User Service client", zap.Error(err))
+	}
+	defer func() {
+		if errClose := userServiceClient.Close(); errClose != nil {
+			logger.Error("Failed to close User Service client connection", zap.Error(errClose))
+		}
+	}()
+
 	newsRepo := mongoAdapter.NewNewsMongoRepository(mongoClient, cfg.Mongo.Database)
 	commentRepo := mongoAdapter.NewCommentMongoRepository(mongoClient, cfg.Mongo.Database)
 	likeRepo := mongoAdapter.NewLikeMongoRepository(mongoClient, cfg.Mongo.Database)
 
 	cacheRepo := redisAdapter.NewRedisCacheRepository(redisClient, logger)
-	logger.Info("Repositories (DB & Cache) initialized")
+	emailSender := emailAdapter.NewSMTPSender(&cfg.SMTP, logger)
 
-	newsUC := usecase.NewNewsUseCase(mongoClient, newsRepo, commentRepo, likeRepo, natsPublisher, cacheRepo, logger)
+	logger.Info("Repositories (DB & Cache), Email Sender and UserServiceClient initialized")
+
+	newsUC := usecase.NewNewsUseCase(
+		mongoClient,
+		newsRepo,
+		commentRepo,
+		likeRepo,
+		natsPublisher,
+		cacheRepo,
+		emailSender,
+		userServiceClient,
+		logger,
+	)
 	commentUC := usecase.NewCommentUseCase(commentRepo, newsRepo)
 	likeUC := usecase.NewLikeUseCase(likeRepo, newsRepo, commentRepo)
 

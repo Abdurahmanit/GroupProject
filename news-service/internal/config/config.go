@@ -4,17 +4,28 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/spf13/viper"
 )
 
+type SMTPConfig struct {
+	Host        string `mapstructure:"host"`
+	Port        int    `mapstructure:"port"`
+	Username    string `mapstructure:"username"`
+	Password    string `mapstructure:"password"`
+	SenderEmail string `mapstructure:"sender_email"`
+}
+
 type Config struct {
-	GRPC  GRPCConfig  `mapstructure:"grpc"`
-	Mongo MongoConfig `mapstructure:"mongo"`
-	NATS  NATSConfig  `mapstructure:"nats"`
-	Redis RedisConfig `mapstructure:"redis"`
+	GRPC               GRPCConfig  `mapstructure:"grpc"`
+	Mongo              MongoConfig `mapstructure:"mongo"`
+	NATS               NATSConfig  `mapstructure:"nats"`
+	Redis              RedisConfig `mapstructure:"redis"`
+	SMTP               SMTPConfig  `mapstructure:"smtp"`
+	UserServiceAddress string      `mapstructure:"user_service_address"`
 }
 
 type GRPCConfig struct {
@@ -66,15 +77,17 @@ func LoadConfig(path string) (*Config, error) {
 	viper.SetDefault("redis.password", "")
 	viper.SetDefault("redis.db", 0)
 
+	viper.SetDefault("user_service_address", "localhost:50051")
+
 	viper.SetConfigName(".env")
 	viper.SetConfigType("env")
 	viper.AddConfigPath(".")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Println(".env file not found, using defaults or other config sources.")
+			log.Println(".env file not found by Viper, relying on actual environment variables or defaults.")
 		} else {
-			log.Printf("Error reading .env file: %s\n", err)
+			log.Printf("Error reading .env file with Viper: %s\n", err)
 		}
 	}
 
@@ -86,7 +99,6 @@ func LoadConfig(path string) (*Config, error) {
 			viper.SetConfigName("config")
 		}
 		viper.SetConfigType("yaml")
-
 		if err := viper.MergeInConfig(); err != nil {
 			if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 				log.Println("YAML config file specified by path not found, relying on .env or defaults.")
@@ -113,7 +125,36 @@ func LoadConfig(path string) (*Config, error) {
 
 	var cfg Config
 	if err := viper.Unmarshal(&cfg); err != nil {
-		return nil, fmt.Errorf("unable to decode into struct, %v", err)
+		return nil, fmt.Errorf("unable to decode into struct (initial unmarshal): %v", err)
+	}
+
+	smtpHost := os.Getenv("NEWS_SMTP_HOST")
+	if smtpHost == "" {
+		smtpHost = "smtp.gmail.com"
+	}
+	cfg.SMTP.Host = smtpHost
+
+	smtpPortStr := os.Getenv("NEWS_SMTP_PORT")
+	smtpPort := 587
+	if smtpPortStr != "" {
+		parsedPort, err := strconv.Atoi(smtpPortStr)
+		if err == nil {
+			smtpPort = parsedPort
+		} else {
+			log.Printf("Warning: Could not parse NEWS_SMTP_PORT ('%s') to int. Using default %d.\n", smtpPortStr, smtpPort)
+		}
+	}
+	cfg.SMTP.Port = smtpPort
+
+	cfg.SMTP.Username = os.Getenv("NEWS_SMTP_USERNAME")
+	cfg.SMTP.Password = os.Getenv("NEWS_SMTP_PASSWORD")
+	cfg.SMTP.SenderEmail = os.Getenv("NEWS_SMTP_SENDER_EMAIL")
+
+	if cfg.UserServiceAddress == "" {
+		cfg.UserServiceAddress = os.Getenv("NEWS_USER_SERVICE_ADDRESS")
+		if cfg.UserServiceAddress == "" {
+			cfg.UserServiceAddress = "localhost:50051"
+		}
 	}
 
 	return &cfg, nil

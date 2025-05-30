@@ -23,14 +23,25 @@ type NATSPublisherInterface interface {
 	PublishNewsDeleted(ctx context.Context, newsID string) error
 }
 
+type EmailSenderInterface interface {
+	SendEmail(to []string, subject, body string) error
+}
+
+type UserServiceClientInterface interface {
+	GetAuthorEmail(ctx context.Context, authorID string) (string, error)
+	Close() error
+}
+
 type NewsUseCase struct {
-	mongoClient   *mongo.Client
-	newsRepo      repository.NewsRepository
-	commentRepo   repository.CommentRepository
-	likeRepo      repository.LikeRepository
-	natsPublisher NATSPublisherInterface
-	cacheRepo     cache.CacheRepository
-	logger        *zap.Logger
+	mongoClient       *mongo.Client
+	newsRepo          repository.NewsRepository
+	commentRepo       repository.CommentRepository
+	likeRepo          repository.LikeRepository
+	natsPublisher     NATSPublisherInterface
+	cacheRepo         cache.CacheRepository
+	emailSender       EmailSenderInterface
+	userServiceClient UserServiceClientInterface
+	logger            *zap.Logger
 }
 
 func NewNewsUseCase(
@@ -40,31 +51,21 @@ func NewNewsUseCase(
 	lr repository.LikeRepository,
 	np NATSPublisherInterface,
 	cr cache.CacheRepository,
+	es EmailSenderInterface,
+	usc UserServiceClientInterface,
 	log *zap.Logger,
 ) *NewsUseCase {
 	return &NewsUseCase{
-		mongoClient:   mc,
-		newsRepo:      nr,
-		commentRepo:   cmr,
-		likeRepo:      lr,
-		natsPublisher: np,
-		cacheRepo:     cr,
-		logger:        log,
+		mongoClient:       mc,
+		newsRepo:          nr,
+		commentRepo:       cmr,
+		likeRepo:          lr,
+		natsPublisher:     np,
+		cacheRepo:         cr,
+		emailSender:       es,
+		userServiceClient: usc,
+		logger:            log,
 	}
-}
-
-func newsCacheKey(newsID string) string {
-	return fmt.Sprintf("news:%s", newsID)
-}
-
-const newsCacheTTL = 5 * time.Minute
-
-type CreateNewsInput struct {
-	Title    string
-	Content  string
-	AuthorID string
-	ImageURL string
-	Category string
 }
 
 func (uc *NewsUseCase) CreateNews(ctx context.Context, input CreateNewsInput) (*entity.News, error) {
@@ -113,7 +114,63 @@ func (uc *NewsUseCase) CreateNews(ctx context.Context, input CreateNewsInput) (*
 		}
 	}
 
+	if uc.emailSender != nil && uc.userServiceClient != nil {
+		authorEmail, errEmailLookup := uc.userServiceClient.GetAuthorEmail(ctx, news.AuthorID)
+		if errEmailLookup == nil && authorEmail != "" {
+			subject := fmt.Sprintf("Ваша новость опубликована: %s", news.Title)
+			body := fmt.Sprintf("Поздравляем!\n\nВаша новость '%s' была успешно опубликована на нашем портале.\n\nID новости: %s", news.Title, news.ID)
+			errSend := uc.emailSender.SendEmail([]string{authorEmail}, subject, body)
+			if errSend != nil {
+				uc.logger.Error("Failed to send publication notification email",
+					zap.Error(errSend),
+					zap.String("author_id", news.AuthorID),
+					zap.String("author_email", authorEmail),
+					zap.String("news_id", news.ID),
+				)
+			} else {
+				uc.logger.Info("Publication notification email sent successfully",
+					zap.String("author_id", news.AuthorID),
+					zap.String("author_email", authorEmail),
+					zap.String("news_id", news.ID),
+				)
+			}
+		} else if errEmailLookup != nil {
+			uc.logger.Warn("Could not send publication email: failed to lookup author email from user-service",
+				zap.Error(errEmailLookup),
+				zap.String("author_id", news.AuthorID),
+				zap.String("news_id", news.ID),
+			)
+		} else if authorEmail == "" {
+			uc.logger.Warn("Could not send publication email: user-service returned empty email for author",
+				zap.String("author_id", news.AuthorID),
+				zap.String("news_id", news.ID),
+			)
+		}
+	}
+
 	return news, nil
+}
+
+func newsCacheKey(newsID string) string {
+	return fmt.Sprintf("news:%s", newsID)
+}
+
+const newsCacheTTL = 5 * time.Minute
+
+type CreateNewsInput struct {
+	Title    string
+	Content  string
+	AuthorID string
+	ImageURL string
+	Category string
+}
+
+type UpdateNewsInput struct {
+	ID       string
+	Title    *string
+	Content  *string
+	ImageURL *string
+	Category *string
 }
 
 func (uc *NewsUseCase) GetNewsByID(ctx context.Context, id string) (*entity.News, error) {
@@ -168,14 +225,6 @@ func (uc *NewsUseCase) GetNewsByID(ctx context.Context, id string) (*entity.News
 		}
 	}
 	return news, nil
-}
-
-type UpdateNewsInput struct {
-	ID       string
-	Title    *string
-	Content  *string
-	ImageURL *string
-	Category *string
 }
 
 func (uc *NewsUseCase) UpdateNews(ctx context.Context, input UpdateNewsInput) (*entity.News, error) {
