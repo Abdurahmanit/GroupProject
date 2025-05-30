@@ -28,7 +28,7 @@ type Config struct {
 func LoadConfig(appLogger *logger.Logger) (*Config, error) {
 	// Set default values
 	viper.SetDefault("SERVICE_NAME", "review-service")
-	viper.SetDefault("GRPC_PORT", "50053") // Default gRPC port for review-service
+	viper.SetDefault("GRPC_PORT", "50052") // Default gRPC port for review-service
 	viper.SetDefault("MONGO_URI", "mongodb://localhost:27017")
 	viper.SetDefault("MONGO_DATABASE", "bicycle_shop_reviews") // Specific DB for reviews
 	viper.SetDefault("NATS_URL", "nats://localhost:4222")
@@ -40,17 +40,6 @@ func LoadConfig(appLogger *logger.Logger) (*Config, error) {
 
 	// Tell viper to look for environment variables
 	viper.AutomaticEnv()
-	// Optional: Read from a .env file if present (godotenv is called in main.go)
-	// viper.SetConfigName(".env")
-	// viper.SetConfigType("env")
-	// viper.AddConfigPath(".")
-	// if err := viper.ReadInConfig(); err != nil {
-	// 	if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-	// 		appLogger.Info("No .env config file found, relying on OS environment variables.")
-	// 	} else {
-	// 		appLogger.Warn("Error reading .env config file", zap.Error(err))
-	// 	}
-	// }
 
 	var cfg Config
 	if err := viper.Unmarshal(&cfg); err != nil {

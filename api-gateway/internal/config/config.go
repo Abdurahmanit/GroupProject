@@ -12,6 +12,8 @@ type Config struct {
 	UserServicePort    int    `mapstructure:"USER_SERVICE_PORT"`
 	ListingServiceHost string `mapstructure:"LISTING_SERVICE_HOST"`
 	ListingServicePort int    `mapstructure:"LISTING_SERVICE_PORT"`
+	ReviewServiceHost  string `mapstructure:"REVIEW_SERVICE_HOST"`
+	ReviewServicePort  int    `mapstructure:"REVIEW_SERVICE_PORT"`
 	JWTSecret          string `mapstructure:"JWT_SECRET"`
 }
 
@@ -28,6 +30,8 @@ func LoadConfig() (*Config, error) {
 	viper.BindEnv("USER_SERVICE_PORT", "USER_SERVICE_PORT")
 	viper.BindEnv("LISTING_SERVICE_HOST", "LISTING_SERVICE_HOST")
 	viper.BindEnv("LISTING_SERVICE_PORT", "LISTING_SERVICE_PORT")
+	viper.BindEnv("REVIEW_SERVICE_HOST") // New
+	viper.BindEnv("REVIEW_SERVICE_PORT")
 	viper.BindEnv("JWT_SECRET", "JWT_SECRET")
 	viper.AutomaticEnv()
 

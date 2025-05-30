@@ -478,7 +478,7 @@ func GRPCCodeToHTTPStatus(code codes.Code) int {
 	case codes.OK:
 		return http.StatusOK
 	case codes.Canceled:
-		return 499 // Client Closed Request (non-standard)
+		return 499 // Client Closed Request
 	case codes.Unknown:
 		return http.StatusInternalServerError
 	case codes.InvalidArgument:
@@ -494,7 +494,7 @@ func GRPCCodeToHTTPStatus(code codes.Code) int {
 	case codes.ResourceExhausted:
 		return http.StatusTooManyRequests
 	case codes.FailedPrecondition:
-		return http.StatusBadRequest // Or http.StatusConflict (409)
+		return http.StatusBadRequest
 	case codes.Aborted:
 		return http.StatusConflict
 	case codes.OutOfRange:
