@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/Abdurahmanit/GroupProject/api-gateway/internal/config"
 	"github.com/Abdurahmanit/GroupProject/api-gateway/internal/handler"
 	"github.com/Abdurahmanit/GroupProject/api-gateway/internal/middleware"
 	"github.com/Abdurahmanit/GroupProject/api-gateway/internal/router"
+
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -15,53 +17,61 @@ import (
 )
 
 func main() {
-	// Initialize logger
+	// Инициализация логгера
 	logger, _ := zap.NewProduction()
-	defer logger.Sync()
+	defer func() {
+		if err := logger.Sync(); err != nil {
+			log.Printf("Error syncing logger: %v\n", err)
+		}
+	}()
 
-	// Load configuration
+	// Загрузка конфигурации
 	cfg, err := config.LoadConfig()
 	if err != nil {
-		logger.Fatal("Failed to load config", zap.Error(err))
+		logger.Fatal("Failed to load API Gateway config", zap.Error(err))
 	}
 
-	// Connect to User Service via gRPC
-	userConn, err := grpc.NewClient(
-		fmt.Sprintf("%s:%d", cfg.UserServiceHost, cfg.UserServicePort),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
+	userConnAddr := fmt.Sprintf("%s:%d", cfg.UserServiceHost, cfg.UserServicePort)
+	userConn, err := grpc.NewClient(userConnAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		logger.Fatal("Failed to connect to User Service", zap.Error(err))
+		logger.Fatal("Failed to connect to User Service", zap.String("address", userConnAddr), zap.Error(err))
 	}
 	defer userConn.Close()
+	logger.Info("Successfully connected to User Service", zap.String("address", userConnAddr))
 
-	// Connect to Listing Service via gRPC
-	listingConn, err := grpc.NewClient( //nolint:staticcheck // SA1019: grpc.Dial is deprecated
-		fmt.Sprintf("%s:%d", cfg.ListingServiceHost, cfg.ListingServicePort),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
+	// Подключение к Listing Service
+	listingConnAddr := fmt.Sprintf("%s:%d", cfg.ListingServiceHost, cfg.ListingServicePort)
+	listingConn, err := grpc.NewClient(listingConnAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		logger.Fatal("Failed to connect to Listing Service", zap.Error(err))
+		logger.Fatal("Failed to connect to Listing Service", zap.String("address", listingConnAddr), zap.Error(err))
 	}
 	defer listingConn.Close()
-	
-	// Initialize handlers
+	logger.Info("Successfully connected to Listing Service", zap.String("address", listingConnAddr))
+
+	// Подключение к Review Service (Новое)
+	reviewConnAddr := fmt.Sprintf("%s:%d", cfg.ReviewServiceHost, cfg.ReviewServicePort)
+	reviewConn, err := grpc.NewClient(reviewConnAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		logger.Fatal("Failed to connect to Review Service", zap.String("address", reviewConnAddr), zap.Error(err))
+	}
+	defer reviewConn.Close()
+	logger.Info("Successfully connected to Review Service", zap.String("address", reviewConnAddr))
+
+	// Инициализация обработчиков (сохраняем существующий стиль)
 	userHandler := handler.NewUserHandler(userConn, logger)
 	listingHandler := handler.NewListingHandler(listingConn, logger)
-	// Add other service handlers here
+	reviewHandler := handler.NewReviewHandler(reviewConn, logger)
 
-	// Set up main router
 	r := chi.NewRouter()
 	r.Use(middleware.Logger(logger))
-
 	router.SetupUserRoutes(r, userHandler, cfg.JWTSecret)
 	router.SetupListingRoutes(r, listingHandler, cfg.JWTSecret)
-	// Setup other routes
+	router.SetupReviewRoutes(r, reviewHandler, cfg.JWTSecret)
 
-	// Start HTTP server
-	addr := fmt.Sprintf(":%d", cfg.Port)
-	logger.Info("Starting API Gateway", zap.String("address", addr))
-	if err := http.ListenAndServe(addr, r); err != nil {
-		logger.Fatal("Failed to start server", zap.Error(err))
+	// Запуск HTTP сервера
+	httpServerAddr := fmt.Sprintf(":%d", cfg.Port)
+	logger.Info("Starting API Gateway HTTP server", zap.String("address", httpServerAddr))
+	if err := http.ListenAndServe(httpServerAddr, r); err != nil {
+		logger.Fatal("Failed to start API Gateway HTTP server", zap.Error(err))
 	}
 }

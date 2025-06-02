@@ -14,16 +14,16 @@ type Config struct {
 
 	// MailerSend specific
 	MailerSendAPIKey    string `mapstructure:"MAILERSEND_API_KEY"`
-	MailerSendFromEmail string `mapstructure:"MAILERSEND_FROM_EMAIL"` // For MailerSend
-	MailerSendFromName  string `mapstructure:"MAILERSEND_FROM_NAME"`  // For MailerSend
+	MailerSendFromEmail string `mapstructure:"MAILERSEND_FROM_EMAIL"`
+	MailerSendFromName  string `mapstructure:"MAILERSEND_FROM_NAME"`
 
 	// SMTP specific
 	SMTPHost       string `mapstructure:"SMTP_HOST"`
 	SMTPPort       int    `mapstructure:"SMTP_PORT"`
 	SMTPUsername   string `mapstructure:"SMTP_USERNAME"`
 	SMTPPassword   string `mapstructure:"SMTP_PASSWORD"`
-	SMTPFromEmail  string `mapstructure:"SMTP_FROM_EMAIL"`  // For SMTP, often same as username
-	SMTPSenderName string `mapstructure:"SMTP_SENDER_NAME"` // For SMTP
+	SMTPFromEmail  string `mapstructure:"SMTP_FROM_EMAIL"`
+	SMTPSenderName string `mapstructure:"SMTP_SENDER_NAME"`
 }
 
 func LoadConfig() (*Config, error) {
@@ -47,7 +47,7 @@ func LoadConfig() (*Config, error) {
 	viper.BindEnv("smtp_from_email", "SMTP_FROM_EMAIL")
 	viper.BindEnv("smtp_sender_name", "SMTP_SENDER_NAME")
 
-	viper.AutomaticEnv() // Allow Viper to pick up other env vars
+	viper.AutomaticEnv()
 
 	var cfg Config
 	if err := viper.Unmarshal(&cfg); err != nil {
@@ -56,7 +56,7 @@ func LoadConfig() (*Config, error) {
 
 	// Set a default mailer type if not specified
 	if cfg.MailerType == "" {
-		cfg.MailerType = "mailersend" // Or "smtp" depending on your primary choice
+		cfg.MailerType = "mailersend" // Or "smtp" depending on primary choice
 	}
 
 	return &cfg, nil

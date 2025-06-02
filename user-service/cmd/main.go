@@ -44,7 +44,6 @@ func main() {
 		logger.Fatal("Failed to load config with Viper", zap.Error(err))
 	}
 
-	// Configuration validation (essential fields)
 	if cfg.MongoURI == "" {
 		logger.Fatal("FATAL: cfg.MongoURI is empty.")
 	}
@@ -56,11 +55,10 @@ func main() {
 	}
 	if cfg.Port == 0 {
 		logger.Warn("WARNING: cfg.Port is 0. Defaulting to 50051.", zap.Int("current_cfg_port", cfg.Port))
-		cfg.Port = 50051 // Ensure a default port if not set
+		cfg.Port = 50051
 	}
 
-	// Mailer configuration validation based on MAILER_TYPE
-	var mailerService mailer.Mailer // Use the interface type
+	var mailerService mailer.Mailer
 	logger.Info("Configured MAILER_TYPE", zap.String("type", cfg.MailerType))
 
 	if cfg.MailerType == "smtp" {
@@ -74,7 +72,7 @@ func main() {
 			cfg.SMTPUsername,
 			cfg.SMTPPassword,
 			cfg.SMTPFromEmail,
-			cfg.SMTPSenderName, // This can be empty if not set, mailer will handle
+			cfg.SMTPSenderName,
 			logger,
 		)
 	} else if cfg.MailerType == "mailersend" {
@@ -85,7 +83,7 @@ func main() {
 		mailerService = mailer.NewMailerSendService(
 			cfg.MailerSendAPIKey,
 			cfg.MailerSendFromEmail,
-			cfg.MailerSendFromName, // This can be empty if not set, mailer will handle
+			cfg.MailerSendFromName,
 			logger,
 		)
 	} else {
@@ -129,7 +127,7 @@ func main() {
 
 	// Initialize components
 	userRepo := repository.NewUserRepository(db, redisClient, logger)
-	userUsecase := usecase.NewUserUsecase(userRepo, mailerService, cfg.JWTSecret, logger) // Pass the chosen mailerService
+	userUsecase := usecase.NewUserUsecase(userRepo, mailerService, cfg.JWTSecret, logger)
 	userGRPCHandler := adapter.NewUserHandler(userUsecase, logger)
 
 	// Start gRPC server

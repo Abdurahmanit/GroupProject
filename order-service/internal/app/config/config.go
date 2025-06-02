@@ -9,6 +9,18 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type SMTPConfig struct {
+	Host         string        `yaml:"host" env:"SMTP_HOST" env-required:"true"`
+	Port         int           `yaml:"port" env:"SMTP_PORT" env-required:"true"`
+	Username     string        `yaml:"username" env:"SMTP_USERNAME"`
+	Password     string        `yaml:"password" env:"SMTP_PASSWORD"`
+	SenderEmail  string        `yaml:"sender_email" env:"SMTP_SENDER_EMAIL" env-required:"true"`
+	Encryption   string        `yaml:"encryption" env:"SMTP_ENCRYPTION" env-default:"tls"`
+	ServerName   string        `yaml:"server_name" env:"SMTP_SERVER_NAME"`
+	WriteTimeout time.Duration `yaml:"write_timeout" env:"SMTP_WRITE_TIMEOUT" env-default:"10s"`
+	ReadTimeout  time.Duration `yaml:"read_timeout" env:"SMTP_READ_TIMEOUT" env-default:"10s"`
+}
+
 type ProductCacheConfig struct {
 	TTL time.Duration `yaml:"ttl" env:"PRODUCT_CACHE_TTL" env-default:"5m"`
 }
@@ -35,6 +47,7 @@ type Config struct {
 	Services     ServicesConfig     `yaml:"services"`
 	Cart         CartConfig         `yaml:"cart"`
 	ProductCache ProductCacheConfig `yaml:"product_cache"`
+	SMTP         SMTPConfig         `yaml:"smtp"`
 }
 
 type GRPCServerConfig struct {

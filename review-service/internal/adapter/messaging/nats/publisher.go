@@ -4,37 +4,37 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
-	"github.com/Abdurahmanit/GroupProject/review-service/internal/platform/logger" // Adjust path if necessary
+	"github.com/Abdurahmanit/GroupProject/review-service/internal/platform/logger"
 	"github.com/nats-io/nats.go"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/propagation"
+	"go.uber.org/zap"
 )
 
 var tracer = otel.Tracer("review-service/nats-publisher")
 
-// Publisher handles publishing messages to NATS.
 type Publisher struct {
 	conn   *nats.Conn
 	logger *logger.Logger
 }
 
-// NewPublisher creates a new NATS publisher.
 func NewPublisher(url string, log *logger.Logger, appName string) (*Publisher, error) {
 	log.Info("NATS Publisher: connecting...", zap.String("url", url))
 
 	opts := []nats.Option{
 		nats.Name(fmt.Sprintf("%s NATS Publisher", appName)),
+		nats.Timeout(10 * time.Second), // Example timeout
 		nats.ErrorHandler(func(nc *nats.Conn, sub *nats.Subscription, err error) {
-			log.Error("NATS error", zap.String("subject", sub.Subject), zap.Error(err))
+			log.Error("NATS error", zap.Stringp("subject", &sub.Subject), zap.Error(err))
 		}),
 		nats.ClosedHandler(func(nc *nats.Conn) {
 			log.Info("NATS connection closed")
 		}),
-		nats.DisconnectedErrHandler(func(nc *nats.Conn, err error) {
+		nats.DisconnectErrHandler(func(nc *nats.Conn, err error) { // Corrected
 			log.Warn("NATS disconnected", zap.Error(err))
 		}),
-		nats.ReconnectedHandler(func(nc *nats.Conn) {
+		nats.ReconnectHandler(func(nc *nats.Conn) { // Corrected
 			log.Info("NATS reconnected", zap.String("url", nc.ConnectedUrl()))
 		}),
 	}
@@ -52,8 +52,6 @@ func NewPublisher(url string, log *logger.Logger, appName string) (*Publisher, e
 	}, nil
 }
 
-// Publish sends a message to the specified NATS subject.
-// It injects OpenTelemetry trace context into the message headers.
 func (p *Publisher) Publish(ctx context.Context, subject string, data interface{}) error {
 	_, span := tracer.Start(ctx, fmt.Sprintf("NATS.Publish.%s", subject))
 	defer span.End()
@@ -67,17 +65,14 @@ func (p *Publisher) Publish(ctx context.Context, subject string, data interface{
 		return fmt.Errorf("failed to marshal data for subject %s: %w", subject, err)
 	}
 
-	// Create a NATS message and inject trace context into headers
 	msg := nats.NewMsg(subject)
 	msg.Data = jsonData
-	msg.Header = make(nats.Header)
+	msg.Header = make(nats.Header) // nats.Header is map[string][]string
 
-	// Inject OpenTelemetry context into NATS headers
 	propagator := otel.GetTextMapPropagator()
-	carrier := propagation.HeaderCarrier(msg.Header) // NATS header implements TextMapCarrier
-	propagator.Inject(ctx, carrier)
+	propagator.Inject(ctx, NATSHeaderCarrier(msg.Header))
 
-	err = p.conn.PublishMsg(msg) // Use PublishMsg to send message with headers
+	err = p.conn.PublishMsg(msg)
 	if err != nil {
 		p.logger.Error("NATS Publisher: failed to publish message", zap.String("subject", subject), zap.Error(err))
 		span.RecordError(err)
@@ -86,6 +81,24 @@ func (p *Publisher) Publish(ctx context.Context, subject string, data interface{
 
 	p.logger.Info("NATS Publisher: message published successfully", zap.String("subject", subject), zap.Int("data_size_bytes", len(jsonData)))
 	return nil
+}
+
+type NATSHeaderCarrier nats.Header
+
+func (c NATSHeaderCarrier) Get(key string) string {
+	return nats.Header(c).Get(key)
+}
+
+func (c NATSHeaderCarrier) Set(key string, value string) {
+	nats.Header(c).Set(key, value)
+}
+
+func (c NATSHeaderCarrier) Keys() []string {
+	keys := make([]string, 0, len(c))
+	for k := range c {
+		keys = append(keys, k)
+	}
+	return keys
 }
 
 // Close drains and closes the NATS connection.

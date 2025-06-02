@@ -11,10 +11,9 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// Logger is a wrapper around a chosen logging library (e.g., Zap).
 type Logger struct {
-	*zap.Logger // Embed Zap's SugaredLogger or Logger
-	config      *LoggerConfig
+	*zap.Logger
+	config *LoggerConfig
 }
 
 var (
@@ -22,14 +21,12 @@ var (
 	once         sync.Once
 )
 
-// NewLogger initializes the global logger based on configuration.
-// It's designed to be called once. Subsequent calls return the existing instance.
 func NewLogger() *Logger {
 	once.Do(func() {
-		cfg := DefaultConfig() // Load configuration (from env vars)
+		cfg := DefaultConfig()
 
 		var zapConfig zap.Config
-		if cfg.Level == "debug" { // More verbose debug config
+		if cfg.Level == "debug" {
 			zapConfig = zap.NewDevelopmentConfig()
 			zapConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder // Colored level for development
 		} else { // Production-ready config
@@ -65,7 +62,6 @@ func NewLogger() *Logger {
 		// Set encoder based on format
 		if strings.ToLower(cfg.Format) == "console" || strings.ToLower(cfg.Format) == "text" {
 			zapConfig.Encoding = "console"
-			// Customize console encoder if needed (e.g., color, specific fields)
 			zapConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder // Example: colored level for console
 		} else { // Default to JSON
 			zapConfig.Encoding = "json"
@@ -84,21 +80,10 @@ func NewLogger() *Logger {
 	return globalLogger
 }
 
-// Named adds a new path segment to the logger's name.
-// This is useful for contextual logging within different parts of the application.
 func (l *Logger) Named(name string) *Logger {
 	return &Logger{Logger: l.Logger.Named(name), config: l.config}
 }
 
-// With adds structured context to the logger.
 func (l *Logger) With(fields ...zap.Field) *Logger {
 	return &Logger{Logger: l.Logger.With(fields...), config: l.config}
 }
-
-// Convenience methods (Info, Debug, Warn, Error, Fatal, Panic are inherited from zap.Logger)
-// You can add wrappers if you need to enforce specific formats or add global fields.
-
-// Example of a wrapped method if needed:
-// func (l *Logger) Info(msg string, fields ...zap.Field) {
-// 	 l.Logger.Info(msg, fields...)
-// }

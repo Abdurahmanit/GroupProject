@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Abdurahmanit/GroupProject/review-service/internal/domain"
 	"github.com/Abdurahmanit/GroupProject/review-service/internal/platform/logger"
-	"github.com/Abdurahmanit/GroupProject/review-service/internal/review/domain"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	zap "go.uber.org/zap"
 )
 
 const reviewCollectionName = "reviews"
@@ -42,8 +43,6 @@ func NewReviewRepository(db *mongo.Database, log *logger.Logger) (*ReviewReposit
 	_, err := collection.Indexes().CreateMany(ctx, indexes)
 	if err != nil {
 		log.Error("Failed to create indexes for reviews collection", zap.Error(err))
-		// Don't necessarily fail startup, as indexes might already exist or be created manually.
-		// return nil, fmt.Errorf("failed to create indexes for %s: %w", reviewCollectionName, err)
 	} else {
 		log.Info("Successfully ensured indexes for reviews collection")
 	}
@@ -63,22 +62,22 @@ func (r *ReviewRepository) Create(ctx context.Context, review *domain.Review) er
 		r.logger.Error("Failed to convert domain.Review to document for Create", zap.Error(err))
 		return err
 	}
-	if doc.ID.IsZero() { // Ensure ID is set if not already
+	if doc.ID.IsZero() {
 		doc.ID = primitive.NewObjectID()
 	}
-	review.ID = doc.ID // Update domain entity with generated/confirmed ID
+	review.ID = doc.ID
 
 	now := time.Now().UTC()
 	doc.CreatedAt = now
 	doc.UpdatedAt = now
-	review.CreatedAt = now // Ensure domain model has timestamps
+	review.CreatedAt = now
 	review.UpdatedAt = now
 
 	_, err = r.collection.InsertOne(ctx, doc)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
 			r.logger.Warn("Duplicate key error on review creation", zap.Error(err))
-			return domain.ErrReviewAlreadyExists // Use domain-specific error
+			return domain.ErrReviewAlreadyExists
 		}
 		r.logger.Error("Failed to insert review into DB", zap.Error(err))
 		return fmt.Errorf("db insert failed: %w", err)
@@ -116,9 +115,8 @@ func (r *ReviewRepository) Update(ctx context.Context, review *domain.Review) er
 		return err
 	}
 	doc.UpdatedAt = time.Now().UTC()
-	review.UpdatedAt = doc.UpdatedAt // Sync domain model
+	review.UpdatedAt = doc.UpdatedAt
 
-	// Construct update document to only set fields that are typically updatable
 	updatePayload := bson.M{
 		"$set": bson.M{
 			"rating":             doc.Rating,
@@ -126,6 +124,7 @@ func (r *ReviewRepository) Update(ctx context.Context, review *domain.Review) er
 			"status":             doc.Status,
 			"moderation_comment": doc.ModerationComment,
 			"updated_at":         doc.UpdatedAt,
+			"version":            doc.Version,
 		},
 	}
 
@@ -158,7 +157,6 @@ func (r *ReviewRepository) Delete(ctx context.Context, id primitive.ObjectID) er
 	return nil
 }
 
-// FindByProductID retrieves reviews for a specific product, with pagination and optional status filter.
 func (r *ReviewRepository) FindByProductID(ctx context.Context, productID string, filter domain.ReviewFilter) ([]*domain.Review, int64, error) {
 	r.logger.Debug("Finding reviews by product_id from DB", zap.String("product_id", productID), zap.Any("filter", filter))
 
@@ -208,7 +206,9 @@ func (r *ReviewRepository) FindByUserID(ctx context.Context, userID string, filt
 	r.logger.Debug("Finding reviews by user_id from DB", zap.String("user_id", userID), zap.Any("filter", filter))
 
 	mongoQuery := bson.M{"user_id": userID}
-	// Could add status filter here too if needed for "my reviews" page
+	if filter.Status != nil {
+		mongoQuery["status"] = *filter.Status
+	}
 
 	findOptions := options.Find()
 	if filter.Limit > 0 {
@@ -247,7 +247,6 @@ func (r *ReviewRepository) FindByUserID(ctx context.Context, userID string, filt
 }
 
 // GetAverageRating calculates the average rating for a product.
-// This might be better handled by an aggregation pipeline or a separate denormalized field.
 func (r *ReviewRepository) GetAverageRating(ctx context.Context, productID string) (float64, int32, error) {
 	r.logger.Debug("Calculating average rating for product_id", zap.String("product_id", productID))
 
@@ -284,4 +283,55 @@ func (r *ReviewRepository) GetAverageRating(ctx context.Context, productID strin
 	}
 
 	return results[0].AverageRating, results[0].Count, nil
+}
+
+// FindByStatus retrieves reviews by their status, with pagination.
+func (r *ReviewRepository) FindByStatus(ctx context.Context, status domain.ReviewStatus, filter domain.ReviewFilter) ([]*domain.Review, int64, error) {
+	r.logger.Debug("Finding reviews by status from DB", zap.String("status", string(status)), zap.Any("filter", filter))
+
+	mongoQuery := bson.M{"status": status}
+
+	findOptions := options.Find()
+	if filter.Limit > 0 {
+		findOptions.SetLimit(int64(filter.Limit))
+		if filter.Page > 0 {
+			findOptions.SetSkip(int64(filter.Page-1) * int64(filter.Limit))
+		}
+	}
+	// Default sort or allow sort by filter
+	sortBy := "created_at"
+	sortOrder := -1 // Descending by default
+	if filter.SortBy != "" {
+		sortBy = filter.SortBy
+	}
+	if filter.SortOrder == "asc" {
+		sortOrder = 1
+	}
+	findOptions.SetSort(bson.D{{Key: sortBy, Value: sortOrder}})
+
+	cursor, err := r.collection.Find(ctx, mongoQuery, findOptions)
+	if err != nil {
+		r.logger.Error("Failed to find reviews by status from DB", zap.Error(err), zap.String("status", string(status)))
+		return nil, 0, fmt.Errorf("db find failed: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var docs []*reviewDocument
+	if err = cursor.All(ctx, &docs); err != nil {
+		r.logger.Error("Failed to decode reviews by status from DB", zap.Error(err))
+		return nil, 0, fmt.Errorf("db cursor all failed: %w", err)
+	}
+
+	domainReviews := make([]*domain.Review, len(docs))
+	for i, doc := range docs {
+		domainReviews[i] = doc.toDomainReview()
+	}
+
+	total, err := r.collection.CountDocuments(ctx, mongoQuery)
+	if err != nil {
+		r.logger.Error("Failed to count reviews by status from DB", zap.Error(err))
+		return nil, 0, fmt.Errorf("db count failed: %w", err)
+	}
+
+	return domainReviews, total, nil
 }

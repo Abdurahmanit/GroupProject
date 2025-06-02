@@ -66,9 +66,6 @@ func generateVerificationCode(length int) (string, error) {
 	return string(code), nil
 }
 
-// internalSendVerificationEmail - внутренняя функция для отправки письма верификации
-// Вызывается при регистрации и при повторном запросе.
-// Не проверяет, верифицирован ли email уже, это делается в вызывающих функциях.
 func (u *UserUsecase) internalSendVerificationEmail(ctx context.Context, user *entity.User) error {
 	u.logger.Info("internalSendVerificationEmail: Attempting to send verification email", zap.String("userID", user.ID.Hex()), zap.String("email", user.Email))
 
@@ -82,7 +79,7 @@ func (u *UserUsecase) internalSendVerificationEmail(ctx context.Context, user *e
 	err = u.repo.SaveEmailVerificationDetails(ctx, user.ID, code, expiresAt)
 	if err != nil {
 		u.logger.Error("internalSendVerificationEmail: Failed to save verification code to repository", zap.String("userID", user.ID.Hex()), zap.Error(err))
-		return err // Может вернуть ErrUserNotFound, если юзер был удален
+		return err
 	}
 
 	err = u.mailer.SendEmailVerification(user.Email, user.Username, code)
@@ -105,7 +102,6 @@ func (u *UserUsecase) Register(ctx context.Context, username, email, password, p
 		return "", ErrInvalidPhoneNumber
 	}
 
-	// Проверка на существующие email и номер телефона
 	_, err := u.repo.GetUserByEmail(ctx, email)
 	if err == nil {
 		return "", ErrDuplicateEmail
@@ -120,15 +116,14 @@ func (u *UserUsecase) Register(ctx context.Context, username, email, password, p
 		return "", err
 	}
 
-	// Создание пользователя
 	userEntity := &entity.User{
 		Username:        username,
 		Email:           email,
-		Password:        password, // Хеширование произойдет в репозитории
+		Password:        password,
 		PhoneNumber:     phoneNumber,
 		Role:            "customer",
-		IsActive:        true,  // Пользователь активен сразу
-		IsEmailVerified: false, // Email еще не верифицирован
+		IsActive:        true,
+		IsEmailVerified: false,
 		EmailVerifiedAt: nil,
 	}
 
@@ -138,23 +133,13 @@ func (u *UserUsecase) Register(ctx context.Context, username, email, password, p
 		return "", err
 	}
 	u.logger.Info("Register: User created successfully in repository", zap.String("userID", objectID.Hex()))
-
-	// **АВТОМАТИЧЕСКАЯ ОТПРАВКА ПИСЬМА ВЕРИФИКАЦИИ**
-	// Получаем только что созданного пользователя, чтобы иметь все его актуальные данные (включая ID)
-	// Хотя objectID у нас уже есть, userEntity может не содержать _id и CreatedAt/UpdatedAt после repo.CreateUser
-	// Лучше получить свежую сущность, если internalSendVerificationEmail ожидает entity.User.
-	// В данном случае, у нас есть objectID, email, username, что достаточно для internalSendVerificationEmail,
-	// но для чистоты передадим entity.User.
 	createdUser, err := u.repo.GetUserByID(ctx, objectID)
 	if err != nil {
 		u.logger.Error("Register: Failed to retrieve newly created user for sending verification email", zap.String("userID", objectID.Hex()), zap.Error(err))
-		// Регистрация прошла, но письмо не отправили. Логируем, но не возвращаем ошибку регистрации.
-		// Пользователь сможет запросить письмо повторно.
 	} else {
 		err = u.internalSendVerificationEmail(ctx, createdUser)
 		if err != nil {
 			u.logger.Error("Register: Failed to send verification email automatically after registration", zap.String("userID", objectID.Hex()), zap.Error(err))
-			// Опять же, не проваливаем регистрацию из-за этого.
 		}
 	}
 
@@ -177,12 +162,6 @@ func (u *UserUsecase) Login(ctx context.Context, email, password string) (string
 		u.logger.Warn("Login attempt for inactive user", zap.String("email", email), zap.String("userID", user.ID.Hex()))
 		return "", ErrUserInactive
 	}
-	// Опционально: можно добавить проверку user.IsEmailVerified здесь, если для логина требуется верификация
-	// if !user.IsEmailVerified {
-	//  u.logger.Warn("Login attempt for user with unverified email", zap.String("email", email), zap.String("userID", user.ID.Hex()))
-	//  return "", errors.New("email not verified, please verify your email first") // или специальная ошибка
-	// }
-
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
 		u.logger.Warn("Invalid password attempt", zap.String("email", email), zap.String("userID", user.ID.Hex()))
@@ -198,7 +177,6 @@ func (u *UserUsecase) Login(ctx context.Context, email, password string) (string
 	return tokenString, nil
 }
 
-// RequestEmailVerification используется для повторного запроса письма верификации
 func (u *UserUsecase) RequestEmailVerification(ctx context.Context, userIDHex string) error {
 	u.logger.Info("RequestEmailVerification: User requested verification email", zap.String("userID", userIDHex))
 	objectID, err := primitive.ObjectIDFromHex(userIDHex)
@@ -219,7 +197,6 @@ func (u *UserUsecase) RequestEmailVerification(ctx context.Context, userIDHex st
 		return ErrEmailAlreadyVerified
 	}
 
-	// Используем внутреннюю функцию для отправки
 	return u.internalSendVerificationEmail(ctx, user)
 }
 
@@ -408,9 +385,7 @@ func (u *UserUsecase) UpdateProfile(ctx context.Context, userIDHex, username, em
 		if err != nil {
 			u.logger.Error("Failed to clear old verification code details after email change", zap.String("userID", userIDHex), zap.Error(err))
 		}
-		// АВТОМАТИЧЕСКАЯ ОТПРАВКА ПИСЬМА НА НОВЫЙ АДРЕС
 		u.logger.Info("Attempting to send verification email to new address after profile update", zap.String("newEmail", updateUser.Email))
-		// Передаем обновленную updateUser, так как в ней новый email
 		if errMail := u.internalSendVerificationEmail(ctx, &updateUser); errMail != nil {
 			u.logger.Warn("Failed to automatically send verification email to new address after profile update", zap.Error(errMail))
 		}
@@ -419,9 +394,6 @@ func (u *UserUsecase) UpdateProfile(ctx context.Context, userIDHex, username, em
 	u.logger.Info("User profile updated successfully in usecase", zap.String("userID", userIDHex))
 	return nil
 }
-
-// ... (остальные методы: ChangePassword, DeleteUser, DeactivateUser, Admin методы - остаются без изменений по отношению к этой конкретной задаче) ...
-// Копирую их из версии [Turn 17] для полноты файла
 
 func (u *UserUsecase) ChangePassword(ctx context.Context, userIDHex, oldPassword, newPassword string) error {
 	u.logger.Info("Attempting to change password", zap.String("userID", userIDHex))
@@ -650,7 +622,6 @@ func (u *UserUsecase) AdminSetUserActiveStatus(ctx context.Context, adminIDHex, 
 		u.logger.Info("AdminSetUserActiveStatus: No change needed for user", zap.String("targetUserID", userIDHex), zap.Bool("isActive", isActive))
 		return nil
 	}
-	// oldStatus := targetUser.IsActive // Not needed if we just set directly
 	targetUser.IsActive = isActive
 
 	if err := u.repo.UpdateUser(ctx, targetUser); err != nil { // This will use the updated UpdateUser in repository
